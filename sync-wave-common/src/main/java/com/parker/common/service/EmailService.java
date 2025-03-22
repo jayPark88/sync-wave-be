@@ -16,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Locale;
 
-import static com.parker.common.exception.enums.ResponseErrorCode.FAIL_400;
 import static com.parker.common.exception.enums.ResponseErrorCode.FAIL_500;
 
 @Service

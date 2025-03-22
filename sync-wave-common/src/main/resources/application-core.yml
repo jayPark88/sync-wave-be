@@ -1,6 +1,10 @@
-###############################################################
 #######################Slack###################################
 notification:
   slack:
     webhook:
       url: https://hooks.slack.com/services/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
+#######################Mail###################################
+mail:
+  from-email: jaypark8282@gmail.com
+  google:
+    password: jrud ebim rfru lrdl

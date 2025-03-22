@@ -2,6 +2,15 @@ spring:
   profiles:
     active: local
     include: core
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: jaypark8282@gmail.com
+    password: jrud ebim rfru lrdl
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+
 server:
   servlet:
     session:

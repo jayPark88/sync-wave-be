@@ -39,4 +39,7 @@ jwt:
   secret: dGV4dC1ibGFoLXRleHQtYmxhaC10ZXh0LWJsYWgtdGV4dC1ibGFoLXRleHQtYmxhaC10ZXh0LWJsYWgtdGV4dC1ibGFoLXRleHQtYmxhaC10ZXh0LWJsYWgK
   token-validity-in-seconds: 86400 #24시간을 의미
 
+password:
+  reset:
+    uri: http://localhost:8080/reset-password?token=
 

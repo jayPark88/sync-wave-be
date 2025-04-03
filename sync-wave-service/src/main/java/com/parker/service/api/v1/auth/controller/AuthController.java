@@ -1,7 +1,8 @@
-package com.parker.service.api.v1.login.controller;
+package com.parker.service.api.v1.auth.controller;
 
-import com.parker.service.api.v1.login.service.AuthService;
-import com.parker.service.api.v1.login.dto.LoginDto;
+import com.parker.common.jpa.repository.PasswordResetTokenRepository;
+import com.parker.service.api.v1.auth.service.AuthService;
+import com.parker.service.api.v1.auth.dto.LoginDto;
 import com.parker.common.exception.CustomException;
 import com.parker.common.resonse.CommonResponse;
 import lombok.RequiredArgsConstructor;
@@ -9,10 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.util.Locale;
@@ -44,6 +42,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final MessageSource messageSource;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
 
     @PostMapping("/login")
     public CommonResponse<?> authorize(@Valid @RequestBody LoginDto loginDto, BindingResult bindingResult) {
@@ -52,5 +51,20 @@ public class AuthController {
             throw new CustomException(FAIL_401.code(), messageSource.getMessage("http.status.unauthorized", null, Locale.getDefault()), HttpStatus.UNAUTHORIZED);
         }
         return authService.authorize(loginDto);
+    }
+
+    @PostMapping("/password-reset/email")
+    public void passwordResetEmailRequest(@RequestParam("email") String email){
+        authService.passwordResetEmailRequest(email);
+    }
+
+    @GetMapping("/password-reset/redirect")
+    public String passwordResetRedirect(@RequestParam("token") String token) {
+        // 1. 토큰 검증
+        passwordResetTokenRepository.findByToken(token)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid or expired token"));
+
+        // 2. 토큰이 유효하면 비밀번호 초기화 화면을 보여주는 URL 리턴 (예: 비밀번호 변경 폼)
+        return "redirect:/passwordReset?token=" + token;
     }
 }

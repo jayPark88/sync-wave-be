@@ -1,11 +1,11 @@
 package com.parker.service.api.v1.user.controller;
 
-import com.parker.service.api.v1.user.service.UserService;
-import com.parker.service.api.v1.user.dto.UserDto;
-import com.parker.service.api.v1.user.dto.UserUpdateRequestDto;
 import com.parker.common.exception.CustomException;
 import com.parker.common.jpa.entity.UserEntity;
 import com.parker.common.resonse.CommonResponse;
+import com.parker.service.api.v1.user.dto.UserDto;
+import com.parker.service.api.v1.user.dto.UserUpdateRequestDto;
+import com.parker.service.api.v1.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
@@ -18,7 +18,8 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import java.util.Locale;
 
-import static com.parker.common.exception.enums.ResponseErrorCode.*;
+import static com.parker.common.exception.enums.ResponseErrorCode.FAIL_400;
+import static com.parker.common.exception.enums.ResponseErrorCode.FAIL_500;
 
 
 /**
@@ -86,4 +87,5 @@ public class UserController {
     public CommonResponse<UserEntity> getUserInfo(@PathVariable(name = "userId") String userId) {
         return new CommonResponse<>(userService.getUserInfo(userId).orElseThrow(() -> new CustomException(FAIL_500.code(), messageSource.getMessage("user.not.found", null, Locale.getDefault()), HttpStatus.INTERNAL_SERVER_ERROR)));
     }
+
 }

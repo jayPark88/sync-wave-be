@@ -67,7 +67,7 @@ public class WebSecurityConfig {
                 .authorizeHttpRequests(
                         authorize -> authorize
                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // OPTIONS 요청 허용
-                                .requestMatchers(new MvcRequestMatcher(introspector, "/v1/auth/login")).permitAll()
+                                .requestMatchers(new MvcRequestMatcher(introspector, "/v1/auth/**")).permitAll()
                                 .requestMatchers(new MvcRequestMatcher(introspector, "/v1/user/signUp")).permitAll()
                                 .anyRequest().authenticated()
                 )

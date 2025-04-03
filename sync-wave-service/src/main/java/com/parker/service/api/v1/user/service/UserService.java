@@ -1,14 +1,14 @@
 package com.parker.service.api.v1.user.service;
 
 
-import com.parker.service.api.v1.user.dto.UserDto;
-import com.parker.service.api.v1.user.dto.UserUpdateRequestDto;
 import com.parker.common.enums.Role;
 import com.parker.common.enums.UserStatus;
 import com.parker.common.exception.CustomException;
 import com.parker.common.jpa.entity.UserEntity;
 import com.parker.common.jpa.repository.UserRepository;
 import com.parker.common.util.security.SecurityUtil;
+import com.parker.service.api.v1.user.dto.UserDto;
+import com.parker.service.api.v1.user.dto.UserUpdateRequestDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
@@ -122,6 +122,7 @@ public class UserService {
 
     /**
      * 사용자 체크 메서드
+     *
      * @param userId
      * @return
      */

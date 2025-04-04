@@ -41,4 +41,4 @@ jwt:
 
 password:
   reset:
-    uri: http://localhost:8080/service/v1/auth/password-reset/redirect?token=
+    uri: http://localhost:8080/service/v1/auth/redirect/password-reset/redirect?token=

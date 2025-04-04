@@ -1,6 +1,7 @@
 package com.parker.service.api.v1.auth.controller;
 
 import com.parker.common.jpa.repository.PasswordResetTokenRepository;
+import com.parker.service.api.v1.auth.dto.PasswordResetRequestDto;
 import com.parker.service.api.v1.auth.service.AuthService;
 import com.parker.service.api.v1.auth.dto.LoginDto;
 import com.parker.common.exception.CustomException;
@@ -58,13 +59,10 @@ public class AuthController {
         authService.passwordResetEmailRequest(email);
     }
 
-    @GetMapping("/password-reset/redirect")
-    public String passwordResetRedirect(@RequestParam("token") String token) {
-        // 1. 토큰 검증
-        passwordResetTokenRepository.findByToken(token)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid or expired token"));
-
-        // 2. 토큰이 유효하면 비밀번호 초기화 화면을 보여주는 URL 리턴 (예: 비밀번호 변경 폼)
-        return "redirect:/passwordReset?token=" + token;
+    // TODO: 개발만 완료 4/5일 테스트 요함, 테스트 후  front-end 개발
+    // TODO: front-end는 login.js부터 뜯어 고쳐야 됨
+    @PostMapping("/password-reset")
+    public void passwordReset(@RequestBody PasswordResetRequestDto passwordResetRequestDto) {
+        authService.passwordReset(passwordResetRequestDto);
     }
 }

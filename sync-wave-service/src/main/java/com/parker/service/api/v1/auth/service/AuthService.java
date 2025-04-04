@@ -3,6 +3,7 @@ package com.parker.service.api.v1.auth.service;
 import com.parker.common.dto.TokenDto;
 import com.parker.common.exception.CustomException;
 import com.parker.common.jpa.entity.PasswordResetTokenEntity;
+import com.parker.common.jpa.entity.UserEntity;
 import com.parker.common.jpa.repository.PasswordResetTokenRepository;
 import com.parker.common.jpa.repository.UserRepository;
 import com.parker.common.jwt.JwtFilter;
@@ -10,6 +11,7 @@ import com.parker.common.jwt.TokenProvider;
 import com.parker.common.resonse.CommonResponse;
 import com.parker.common.service.PasswordResetService;
 import com.parker.service.api.v1.auth.dto.LoginDto;
+import com.parker.service.api.v1.auth.dto.PasswordResetRequestDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
 import org.springframework.http.HttpHeaders;
@@ -18,6 +20,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -52,6 +55,7 @@ public class AuthService {
     private final MessageSource messageSource;
     private final PasswordResetService passwordResetService;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public CommonResponse<TokenDto> authorize(LoginDto loginDto) {
         // UsernamePasswordAuthenticationToken는 주로 사용자가 제공한 사용자명(username)과 비밀번호(password)를 저장하며, 이 정보를 기반으로 사용자를 인증하는 데 활용됩니다.
@@ -88,5 +92,33 @@ public class AuthService {
 
         // password reset email 발송
         passwordResetService.sendResetEmail(email);
+    }
+
+    /**
+     * 패스워드 reset
+     * @param passwordResetRequestDto
+     */
+    public void passwordReset(PasswordResetRequestDto passwordResetRequestDto){
+        // 토큰 검증
+        passwordResetTokenRepository.findByToken(passwordResetRequestDto.getToken()).filter(item -> item.isUsed()==false)
+                .orElseThrow(() -> new CustomException(FAIL_500.code(),
+                        messageSource.getMessage("token.expire", null, Locale.getDefault()),
+                        HttpStatus.INTERNAL_SERVER_ERROR));
+
+        // 실제 사용자 검증
+        UserEntity userEntity = userRepository.findByEmail(passwordResetRequestDto.getEmail()).orElseThrow(() -> new CustomException(FAIL_500.code(), messageSource.getMessage("user.not.found", null, Locale.getDefault()), HttpStatus.INTERNAL_SERVER_ERROR));
+
+        // 패스워드 초기화 설정
+        userEntity.setPassword(passwordEncoder.encode(passwordResetRequestDto.getPassword()));
+
+        // 변경된 패스워드 저장!
+        userRepository.save(userEntity);
+
+        // 토근 사용 처리
+        List<PasswordResetTokenEntity> passwordResetTokenEntityList = passwordResetTokenRepository.findByEmail(passwordResetRequestDto.getEmail());
+        passwordResetTokenEntityList.stream().filter(item -> item.isUsed() == false).forEach(item -> {
+            item.setUsed(true);
+            passwordResetTokenRepository.save(item);
+        });
     }
 }

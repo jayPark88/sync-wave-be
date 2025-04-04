@@ -100,13 +100,14 @@ public class AuthService {
      */
     public void passwordReset(PasswordResetRequestDto passwordResetRequestDto){
         // 토큰 검증
+        PasswordResetTokenEntity passwordResetTokenEntity =
         passwordResetTokenRepository.findByToken(passwordResetRequestDto.getToken()).filter(item -> item.isUsed()==false)
                 .orElseThrow(() -> new CustomException(FAIL_500.code(),
                         messageSource.getMessage("token.expire", null, Locale.getDefault()),
                         HttpStatus.INTERNAL_SERVER_ERROR));
 
         // 실제 사용자 검증
-        UserEntity userEntity = userRepository.findByEmail(passwordResetRequestDto.getEmail()).orElseThrow(() -> new CustomException(FAIL_500.code(), messageSource.getMessage("user.not.found", null, Locale.getDefault()), HttpStatus.INTERNAL_SERVER_ERROR));
+        UserEntity userEntity = userRepository.findByEmail(passwordResetTokenEntity.getEmail()).orElseThrow(() -> new CustomException(FAIL_500.code(), messageSource.getMessage("user.not.found", null, Locale.getDefault()), HttpStatus.INTERNAL_SERVER_ERROR));
 
         // 패스워드 초기화 설정
         userEntity.setPassword(passwordEncoder.encode(passwordResetRequestDto.getPassword()));
@@ -115,7 +116,7 @@ public class AuthService {
         userRepository.save(userEntity);
 
         // 토근 사용 처리
-        List<PasswordResetTokenEntity> passwordResetTokenEntityList = passwordResetTokenRepository.findByEmail(passwordResetRequestDto.getEmail());
+        List<PasswordResetTokenEntity> passwordResetTokenEntityList = passwordResetTokenRepository.findByEmail(userEntity.getEmail());
         passwordResetTokenEntityList.stream().filter(item -> item.isUsed() == false).forEach(item -> {
             item.setUsed(true);
             passwordResetTokenRepository.save(item);

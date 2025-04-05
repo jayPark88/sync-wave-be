@@ -54,13 +54,19 @@ public class AuthController {
         return authService.authorize(loginDto);
     }
 
+    /**
+     * 비밀번호 변경 메일 발송 요청
+     * @param email
+     */
     @PostMapping("/password-reset/email")
     public void passwordResetEmailRequest(@RequestParam("email") String email){
         authService.passwordResetEmailRequest(email);
     }
 
-    // TODO: 개발만 완료 4/5일 테스트 요함, 테스트 후  front-end 개발
-    // TODO: front-end는 login.js부터 뜯어 고쳐야 됨
+    /**
+     * 비밀번호 변경
+     * @param passwordResetRequestDto
+     */
     @PostMapping("/password-reset")
     public void passwordReset(@RequestBody PasswordResetRequestDto passwordResetRequestDto) {
         authService.passwordReset(passwordResetRequestDto);

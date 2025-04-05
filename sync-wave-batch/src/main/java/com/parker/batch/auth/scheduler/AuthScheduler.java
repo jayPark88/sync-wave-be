@@ -16,19 +16,15 @@ import java.util.List;
 public class AuthScheduler {
     private final PasswordResetTokenRepository passwordResetTokenRepository;
 
-//    @Scheduled(cron = "0 */5 * * * *")
-    @Scheduled(cron = "*/5 * * * * *")
+    @Scheduled(cron = "0 */5 * * * *")
     void passwordResetTokenExpireCheck() {
         // 모든 패스워드 reset Token List 조회
         List<PasswordResetTokenEntity> passwordResetTokenEntityList = passwordResetTokenRepository.findAll();
         passwordResetTokenEntityList.stream()
-                .filter(passwordResetTokenEntity -> !passwordResetTokenEntity.isUsed()) // 사용되지 않은 토큰만 필터링
-                .filter(passwordResetTokenEntity -> passwordResetTokenEntity.getExpiresAt().isBefore(LocalDateTime.now())) // expiresAt이 현재 시간 이전인 토큰만 필터링
-                .forEach(passwordResetTokenEntity -> {
-                    passwordResetTokenEntity.setUsed(true); // 토큰 사용 처리
-                    passwordResetTokenRepository.save(passwordResetTokenEntity); // 변경 사항 저장
-                    log.info("Password Reset Token: {}, Expiry Time: {}", passwordResetTokenEntity.getToken(), passwordResetTokenEntity.getExpiresAt()); // 로그 출력
-                });
+                .filter(token -> !token.isUsed() && token.getExpiresAt().isBefore(LocalDateTime.now())) // 조건을 하나로 합침
+                .peek(token -> token.setUsed(true)) // 사용되지 않은 토큰에 대해서만 사용 처리
+                .peek(passwordResetTokenRepository::save) // 변경 사항 저장
+                .forEach(token -> log.info("Password Reset Token: {}, Expiry Time: {}", token.getToken(), token.getExpiresAt())); // 로그 출력
 
     }
 }

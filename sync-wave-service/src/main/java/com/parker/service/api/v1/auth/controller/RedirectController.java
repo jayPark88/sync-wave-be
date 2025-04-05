@@ -32,6 +32,6 @@ public class RedirectController {
                         HttpStatus.INTERNAL_SERVER_ERROR));
 
         // 2. 토큰이 유효하면 비밀번호 초기화 화면을 보여주는 URL 리턴 (예: 비밀번호 변경 폼)
-        return "redirect:http://localhost:3000/login?token="+ token;  // 외부 URL로 리디렉션
+        return "redirect:http://localhost:3000/password/reset?token="+ token;  // 외부 URL로 리디렉션
     }
 }

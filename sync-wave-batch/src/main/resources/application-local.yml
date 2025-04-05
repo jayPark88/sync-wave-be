@@ -7,9 +7,9 @@ spring:
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/sync_wave?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    url: jdbc:mysql://localhost:3306/syncwave?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
     username: parker
-    password: lois@1234
+    password: loist@1234
 
   jpa:
     database-platform: org.hibernate.dialect.MySQL8Dialect #mysql8버전 Dialect사용
@@ -36,5 +36,9 @@ jwt:
   #echo 'text-blah-text-blah-text-blah-text-blah-text-blah-text-blah-text-blah-text-blah-text-blah'|base64
   secret: dGV4dC1ibGFoLXRleHQtYmxhaC10ZXh0LWJsYWgtdGV4dC1ibGFoLXRleHQtYmxhaC10ZXh0LWJsYWgtdGV4dC1ibGFoLXRleHQtYmxhaC10ZXh0LWJsYWgK
   token-validity-in-seconds: 86400 #24시간을 의미
+
+password:
+  reset:
+    uri: http://localhost:8080/service/v1/auth/redirect/password-reset/redirect?token=
 
 

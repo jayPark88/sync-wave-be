@@ -1,11 +1,11 @@
 package com.parker.service.api.v1.auth.controller;
 
+import com.parker.common.exception.CustomException;
 import com.parker.common.jpa.repository.PasswordResetTokenRepository;
+import com.parker.common.resonse.CommonResponse;
+import com.parker.service.api.v1.auth.dto.LoginDto;
 import com.parker.service.api.v1.auth.dto.PasswordResetRequestDto;
 import com.parker.service.api.v1.auth.service.AuthService;
-import com.parker.service.api.v1.auth.dto.LoginDto;
-import com.parker.common.exception.CustomException;
-import com.parker.common.resonse.CommonResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import java.util.Locale;
 
+import static com.parker.common.exception.enums.ResponseErrorCode.FAIL_400;
 import static com.parker.common.exception.enums.ResponseErrorCode.FAIL_401;
 
 
@@ -56,19 +57,24 @@ public class AuthController {
 
     /**
      * 비밀번호 변경 메일 발송 요청
+     *
      * @param email
      */
     @PostMapping("/password-reset/email")
-    public void passwordResetEmailRequest(@RequestParam("email") String email){
+    public void passwordResetEmailRequest(@RequestParam("email") String email) {
         authService.passwordResetEmailRequest(email);
     }
 
     /**
      * 비밀번호 변경
+     *
      * @param passwordResetRequestDto
      */
     @PostMapping("/password-reset")
-    public void passwordReset(@RequestBody PasswordResetRequestDto passwordResetRequestDto) {
+    public void passwordReset(@Valid @RequestBody PasswordResetRequestDto passwordResetRequestDto, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            throw new CustomException(FAIL_400.code(), bindingResult.getFieldErrors().getFirst().getDefaultMessage(), HttpStatus.BAD_REQUEST);
+        }
         authService.passwordReset(passwordResetRequestDto);
     }
 }

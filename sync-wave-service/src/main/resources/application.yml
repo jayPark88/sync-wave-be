@@ -6,7 +6,7 @@ spring:
     host: smtp.gmail.com
     port: 587
     username: jaypark8282@gmail.com
-    password: jrud ebim rfru lrdl
+    password: jeds csxc nwpr rvte
     properties:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: true

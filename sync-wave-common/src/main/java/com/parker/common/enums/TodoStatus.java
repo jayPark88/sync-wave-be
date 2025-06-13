@@ -4,7 +4,6 @@ public enum TodoStatus {
     PENDING("PENDING", "대기 중"),
     IN_PROGRESS("IN_PROGRESS", "진행 중"),
     COMPLETED("COMPLETED", "완료"),
-    BLOCKED("BLOCKED", "막힘"),
     CANCELLED("CANCELLED", "취소");
 
 

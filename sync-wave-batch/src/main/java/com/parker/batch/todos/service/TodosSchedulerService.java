@@ -10,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -25,16 +24,21 @@ public class TodosSchedulerService {
     private final AlarmInterface alarmSlackImpl;
 
     public void alertUsersAboutTodosReminderTask() {
-        log.info("금일 기준 Todos DueDate 종료되지 않은 리스트 조회");
-        List<TodosEntity> todosEntityList = todosRepository.findByDueDateGreaterThanEqual(LocalDate.now());
+        log.info("진행 중인 Todos 리스트 조회");
+        List<TodosEntity> todosEntityList = todosRepository.findByUserId(1L); // 임시로 userId 1로 설정
 
-        log.info("todosEntityList 중 중복 Id 제거");
-        List<TodosEntity> removeDuplicateList =
-                todosEntityList.stream().filter(item -> item.getStatus().equals(TodoStatus.PENDING.code())).collect(Collectors.toMap( // toMap을 사용해 스트림 데이터를 Map으로 변환
-                        TodosEntity::getUserId, // 중복 제거 기준 필드, Map의 키로 사용
-                        todosEntity -> todosEntity, // Map의 값은 TodosEntity 객체 자체로 설정
-                        (existing, replacement) -> replacement // 중복 키 발생 시 기존 값 대신 새 값으로 교체
-                )).values().stream().toList(); // Map의 값(value) 컬렉션을 스트림으로 변환 후 List로 재생성
+        log.info("todosEntityList 중 PENDING 상태인 항목만 필터링");
+        List<TodosEntity> pendingList = todosEntityList.stream()
+                .filter(item -> item.getStatus().equals(TodoStatus.PENDING.code()))
+                .collect(Collectors.toList());
+
+        log.info("사용자별로 그룹화하여 중복 제거");
+        List<TodosEntity> removeDuplicateList = pendingList.stream()
+                .collect(Collectors.toMap(
+                        TodosEntity::getUserId,
+                        todosEntity -> todosEntity,
+                        (existing, replacement) -> replacement
+                )).values().stream().toList();
 
         log.info("알림 발송 요청! 🚀");
         removeDuplicateList.stream().parallel().forEach(item -> {
@@ -46,7 +50,6 @@ public class TodosSchedulerService {
                 alarmSlackImpl.sendMsg(optionalUserEntity.get().getEmail(), generateAlaramMsg(item, optionalUserEntity));
             }
         });
-
     }
 
     /**
@@ -59,7 +62,7 @@ public class TodosSchedulerService {
         StringBuilder stringBuilder = new StringBuilder();
 
         stringBuilder.append(optionalUserEntity.isPresent() ? optionalUserEntity.get().getUserName() : "");
-        stringBuilder.append("님 한시간 뒤 아래와 같은 일정이 예정되어 있습니다 🚀");
+        stringBuilder.append("님 처리해야 할 할일이 있습니다 🚀");
         stringBuilder.append("\n\n");
         stringBuilder.append("︎︎◼︎ todo 내용: ");
         stringBuilder.append(todosEntity.getTask());

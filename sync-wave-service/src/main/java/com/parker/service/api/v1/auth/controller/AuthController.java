@@ -1,7 +1,6 @@
 package com.parker.service.api.v1.auth.controller;
 
 import com.parker.common.exception.CustomException;
-import com.parker.common.jpa.repository.PasswordResetTokenRepository;
 import com.parker.common.resonse.CommonResponse;
 import com.parker.service.api.v1.auth.dto.LoginDto;
 import com.parker.service.api.v1.auth.dto.PasswordResetRequestDto;
@@ -44,7 +43,6 @@ public class AuthController {
 
     private final AuthService authService;
     private final MessageSource messageSource;
-    private final PasswordResetTokenRepository passwordResetTokenRepository;
 
     @PostMapping("/login")
     public CommonResponse<?> authorize(@Valid @RequestBody LoginDto loginDto, BindingResult bindingResult) {

@@ -22,6 +22,8 @@ public class AlarmSlackImpl implements AlarmInterface {
 
     @Value("${notification.slack.webhook.url}")
     private String slackWebhookUrl;
+    
+    private final RestTemplate restTemplate;
     private final MessageSource messageSource;
 
     /**
@@ -32,8 +34,6 @@ public class AlarmSlackImpl implements AlarmInterface {
      */
     @Override
     public CommonResponse<String> sendMsg(String email, String msg) {
-        RestTemplate restTemplate = new RestTemplate();
-
         // Slack 메시지 포맷 설정
         String payload = String.format("{\"text\": \"%s\"}", msg);
 

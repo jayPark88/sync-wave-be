@@ -15,7 +15,6 @@ import org.springframework.test.annotation.Commit;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -39,28 +38,26 @@ class TodosServiceTest {
         // given
         todosDto = TodosDto.builder()
                 .task("매일 저녁 toyProject!!")
-                .dueDate(LocalDate.now().plusDays(100))
                 .build();
     }
 
     @Test
     void createTodos() {
         // when
-        List<TodosEntity> todosEntityList = saveTodos(todosDto.getDueDate());
+        List<TodosEntity> todosEntityList = createTestTodos();
 
         // then
         Assertions.assertAll(
                 () -> assertFalse(todosEntityList.isEmpty()),
-                () -> assertEquals(todosEntityList.stream().findFirst().get().getTask(), todosDto.getTask()),
-                () -> assertEquals(todosEntityList.stream().findFirst().get().getDueDate(), todosDto.getDueDate())
+                () -> assertEquals(todosEntityList.stream().findFirst().get().getTask(), todosDto.getTask())
         );
     }
 
     @Test
     void getDetailTodoDetailInfo() {
         // given
-        Optional<TodosEntity> saveResultEntity = saveTodos();
-        Long todosId = saveResultEntity.get().getId();
+        TodosEntity saveResultEntity = saveSingleTodo();
+        Long todosId = saveResultEntity.getId();
 
         // when
         Optional<TodosEntity> searchResultEntity = todosRepository.findById(todosId);
@@ -68,23 +65,22 @@ class TodosServiceTest {
         // then
         Assertions.assertAll(
                 () -> assertTrue(searchResultEntity.isPresent()),
-                () -> assertEquals(searchResultEntity.get().getTask(), saveResultEntity.get().getTask())
+                () -> assertEquals(searchResultEntity.get().getTask(), saveResultEntity.getTask())
         );
     }
 
     @Test
     void getTodosList() {
         // given
-        saveTodos();
+        saveSingleTodo();
         TodosDtoSearchDto todosDtoSearchDto =
                 TodosDtoSearchDto.builder()
                         .task("매일 저녁 toyProject!!")
-                        .dueDate(LocalDate.now().plusDays(100))
                         .status(TodoStatus.PENDING.code())
                         .build();
 
         // when
-        List<TodosEntity> todosEntityList = todosRepository.findByDueDateGreaterThanEqual(todosDtoSearchDto.getDueDate());
+        List<TodosEntity> todosEntityList = todosRepository.findByUserIdOrderByCreatedDateTimeDesc(1L);
 
         if (!ObjectUtils.isEmpty(todosDtoSearchDto.getTask())) {
             todosEntityList = todosEntityList.stream().filter(item -> item.getTask().contains(todosDtoSearchDto.getTask())).toList();
@@ -106,14 +102,13 @@ class TodosServiceTest {
     @Test
     void modifyTodoInfo() {
         // given
-        Optional<TodosEntity> saveResultEntity = saveTodos();
+        TodosEntity saveResultEntity = saveSingleTodo();
         TodosDto requestTodosDto = TodosDto.builder()
                 .task("매일 저녁 푸쉬업!!")
-                .dueDate(LocalDate.now().plusDays(10))
                 .status(TodoStatus.PENDING.code())
                 .build();
 
-        Optional<TodosEntity> targetEntity = todosRepository.findById(saveResultEntity.get().getId());
+        Optional<TodosEntity> targetEntity = todosRepository.findById(saveResultEntity.getId());
 
         // when
         if (targetEntity.isPresent()) {
@@ -123,28 +118,23 @@ class TodosServiceTest {
             }
 
             if (!ObjectUtils.isEmpty(requestTodosDto.getStatus())) {
-                log.info("isCompleted update {}", requestTodosDto.getStatus());
+                log.info("status update {}", requestTodosDto.getStatus());
                 targetEntity.get().setStatus(requestTodosDto.getStatus());
             }
 
-            if (!ObjectUtils.isEmpty(requestTodosDto.getDueDate())) {
-                log.info("dueDate update {}", requestTodosDto.getDueDate());
-                targetEntity.get().setDueDate(requestTodosDto.getDueDate());
-            }
             todosRepository.save(targetEntity.get());
         } else {
             Assertions.fail("데이터가 없습니다!");
         }
 
         // then
-        targetEntity = todosRepository.findById(saveResultEntity.get().getId());
+        targetEntity = todosRepository.findById(saveResultEntity.getId());
 
         Optional<TodosEntity> finalTargetEntity = targetEntity;
 
         Assertions.assertAll(
                 () -> Assertions.assertTrue(finalTargetEntity.isPresent()),
                 () -> Assertions.assertEquals(requestTodosDto.getTask(), finalTargetEntity.get().getTask()),
-                () -> Assertions.assertEquals(requestTodosDto.getDueDate(), finalTargetEntity.get().getDueDate()),
                 () -> Assertions.assertEquals(requestTodosDto.getStatus(), finalTargetEntity.get().getStatus())
         );
     }
@@ -152,8 +142,8 @@ class TodosServiceTest {
     @Test
     void deleteTodoData() {
         // given
-        Optional<TodosEntity> saveResultEntity = saveTodos();
-        Long todosId = saveResultEntity.get().getId();
+        TodosEntity saveResultEntity = saveSingleTodo();
+        Long todosId = saveResultEntity.getId();
 
         // when
         Optional<TodosEntity> targetEntity = todosRepository.findById(todosId);
@@ -169,37 +159,24 @@ class TodosServiceTest {
         Assertions.assertTrue(targetEntity.isEmpty());
     }
 
-    private Optional<TodosEntity> saveTodos() {
-        return Optional.of(todosRepository.save(
-                        TodosEntity.builder()
-                                .task(todosDto.getTask())
-                                .status(TodoStatus.PENDING.code())
-                                .dueDate(todosDto.getDueDate())
-                                .userId(1L)
-                                .build()
-                )
+    private TodosEntity saveSingleTodo() {
+        return todosRepository.save(
+                TodosEntity.builder()
+                        .task(todosDto.getTask())
+                        .status(TodoStatus.PENDING.code())
+                        .userId(1L)
+                        .build()
         );
     }
 
-    private List<TodosEntity> saveTodos(LocalDate dueDate) {
+    private List<TodosEntity> createTestTodos() {
         List<TodosEntity> todosEntityList = new ArrayList<>();
 
-        LocalDate currentDate = LocalDate.now();
-
-        int i = 0;
-
-        while (!currentDate.isAfter(dueDate)) {
-            currentDate = currentDate.plusDays(1);
-
-            todosEntityList.add(TodosEntity.builder()
-                    .task(todosDto.getTask())
-                    .startDate(LocalDate.now().plusDays(i))
-                    .status(TodoStatus.PENDING.code())
-                    .dueDate(dueDate)
-                    .userId(1L)
-                    .build());
-            i += 1;
-        }
+        todosEntityList.add(TodosEntity.builder()
+                .task(todosDto.getTask())
+                .status(TodoStatus.PENDING.code())
+                .userId(1L)
+                .build());
 
         todosRepository.saveAll(todosEntityList);
 

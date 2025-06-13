@@ -11,7 +11,6 @@ import com.parker.service.api.v1.schedules.dto.SearchSchedulesDto;
 import com.parker.service.api.v1.schedules.service.SchedulesService;
 import com.parker.service.api.v1.todos.dto.TodosDtoSearchDto;
 import com.parker.service.api.v1.todos.service.TodosService;
-import com.parker.service.api.v1.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,17 +22,15 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class DashboardService {
-    private final UserService userService;
     private final SchedulesService schedulesService;
     private final TodosService todosService;
 
     public DashBoardDto getDashBoardInfo(SearchRequestDto searchRequestDto) {
-        Long userId = userService.getUserId();
         YearMonth yearMonth = YearMonth.of(searchRequestDto.getTargetDate().getYear(), searchRequestDto.getTargetDate().getMonth());
 
         DashBoardDto dashBoardDto = new DashBoardDto();
         dashBoardDto.setSchedulesDtoList(searchScheduleList(yearMonth));
-        dashBoardDto.setTodayList(searchTodosList(yearMonth));
+        dashBoardDto.setTodayList(searchTodosList());
         return dashBoardDto;
     }
 
@@ -46,12 +43,13 @@ public class DashboardService {
         return schedulesEntityList.stream().map(SchedulesModel::new).toList();
     }
 
-    private List<TodosModel> searchTodosList(YearMonth yearMonth){
+    private List<TodosModel> searchTodosList(){
         TodosDtoSearchDto todosDtoSearchDto = new TodosDtoSearchDto();
-        todosDtoSearchDto.setStartDate(yearMonth.atDay(1));
-        todosDtoSearchDto.setDueDate(yearMonth.atEndOfMonth());
 
-        List<TodosEntity>todosEntityList = todosService.getDetailTodosList(todosDtoSearchDto).stream().filter(item -> item.getStatus().equals(TodoStatus.PENDING.code()) || item.getStatus().equals(TodoStatus.IN_PROGRESS.code())).toList();
+        List<TodosEntity>todosEntityList = todosService.getDetailTodosList(todosDtoSearchDto).stream()
+            .filter(item -> item.getStatus().equals(TodoStatus.PENDING.code()) || 
+                          item.getStatus().equals(TodoStatus.IN_PROGRESS.code()))
+            .toList();
         return todosEntityList.stream().map(TodosModel::new).toList();
     }
 }

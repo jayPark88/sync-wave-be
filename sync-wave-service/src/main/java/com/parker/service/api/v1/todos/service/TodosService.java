@@ -15,7 +15,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -36,35 +35,26 @@ public class TodosService {
     public List<TodosEntity> createTodos(TodosDto todosDto) {
         List<TodosEntity> todosEntityList = new ArrayList<>();
 
-        LocalDate currentDate = LocalDate.now();
-
-        int i = 0;
-
-        while (!currentDate.isAfter(todosDto.getDueDate())) {
-            currentDate = currentDate.plusDays(1);
-
-            todosEntityList.add(TodosEntity.builder()
-                    .task(todosDto.getTask())
-                    .startDate(LocalDate.now().plusDays(i))
-                    .status(TodoStatus.PENDING.code())
-                    .dueDate(todosDto.getDueDate())
-                    .userId(1L)
-                    .build());
-            i += 1;
-        }
+        todosEntityList.add(TodosEntity.builder()
+                .task(todosDto.getTask())
+                .status(TodoStatus.PENDING.code())
+                .userId(userService.getUserId())
+                .build());
 
         todosRepository.saveAll(todosEntityList);
-
         return todosEntityList;
     }
 
     public TodosEntity getDetailTodoDetailInfo(Long todosId) {
-        return todosRepository.findById(todosId).orElseThrow(() -> new CustomException(FAIL_500.code(), messageSource.getMessage("todo.info.not.found", null, Locale.getDefault()), HttpStatus.INTERNAL_SERVER_ERROR));
+        return todosRepository.findById(todosId)
+                .orElseThrow(() -> new CustomException(FAIL_500.code(), 
+                    messageSource.getMessage("todo.info.not.found", null, Locale.getDefault()), 
+                    HttpStatus.INTERNAL_SERVER_ERROR));
     }
 
     public List<TodosEntity> getDetailTodosList(TodosDtoSearchDto todosDtoSearchDto) {
         Long userId = userService.getUserId();
-        return todosRepository.findByUserIdAndDueDateGreaterThanEqual(userId, todosDtoSearchDto.getDueDate());
+        return todosRepository.findByUserIdOrderByCreatedDateTimeDesc(userId);
     }
 
     public TodosEntity modifyTodoInfo(TodosDto todosDto) {
@@ -77,17 +67,15 @@ public class TodosService {
             }
 
             if (!ObjectUtils.isEmpty(todosDto.getStatus())) {
-                log.info("isCompleted update {}", todosDto.getStatus());
+                log.info("status update {}", todosDto.getStatus());
                 targetEntity.get().setStatus(todosDto.getStatus());
             }
 
-            if (!ObjectUtils.isEmpty(todosDto.getDueDate())) {
-                log.info("dueDate update {}", todosDto.getDueDate());
-                targetEntity.get().setDueDate(todosDto.getDueDate());
-            }
             return todosRepository.save(targetEntity.get());
         } else {
-            throw new CustomException(FAIL_500.code(), messageSource.getMessage("todo.info.not.found", null, Locale.getDefault()), HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new CustomException(FAIL_500.code(), 
+                messageSource.getMessage("todo.info.not.found", null, Locale.getDefault()), 
+                HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

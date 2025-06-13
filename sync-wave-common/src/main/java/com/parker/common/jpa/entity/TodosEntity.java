@@ -7,7 +7,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
-import java.time.LocalDate;
 
 /**
  * com.jaypark8282.core.jpa.entity
@@ -41,14 +40,8 @@ public class TodosEntity extends BaseInfoEntity {
     @Column(nullable = false, length = 255, columnDefinition = "VARCHAR(255) COMMENT '작업명'")
     private String task;
 
-    @Column(columnDefinition = "DATETIME COMMENT '작업 실행일'")
-    private LocalDate startDate;
-
     @Column(nullable = false, length = 20, columnDefinition = "VARCHAR(20) COMMENT '작업 상태'")
     private String status; // 작업 상태 (예: "PENDING", "IN_PROGRESS", "COMPLETED")
-
-    @Column(nullable = false, columnDefinition = "DATETIME COMMENT '마감일'")
-    private LocalDate dueDate; // 시작 날짜 및 시간
 
     @Column(name = "user_id", nullable = false, columnDefinition = "BIGINT COMMENT '사용자 ID'")
     private Long userId; // 사용자 ID

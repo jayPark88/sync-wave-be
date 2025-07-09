@@ -6,6 +6,7 @@ import com.parker.common.enums.UserStatus;
 import com.parker.common.exception.CustomException;
 import com.parker.common.jpa.entity.UserEntity;
 import com.parker.common.jpa.repository.UserRepository;
+import com.parker.common.jwt.TokenProvider;
 import com.parker.common.util.security.SecurityUtil;
 import com.parker.service.api.v1.user.dto.UserDto;
 import com.parker.service.api.v1.user.dto.UserUpdateRequestDto;
@@ -19,6 +20,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Locale;
 import java.util.Optional;
@@ -50,6 +53,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final MessageSource messageSource;
+    private final TokenProvider tokenProvider;
 
     @Transactional
     public UserEntity signUp(UserDto userDto) {
@@ -71,7 +75,8 @@ public class UserService {
     }
 
     @Transactional
-    public UserEntity updateUser(String userId, UserUpdateRequestDto userUpdateRequestDto) {
+    public UserEntity updateUser(UserUpdateRequestDto userUpdateRequestDto) {
+        String userId = getTokenDecodeUserId(userUpdateRequestDto.getToken());
         if (!checkUserCheck(userId)) {
             throw new CustomException(FAIL_500.code(),
                     messageSource.getMessage("user.un.auth", null, Locale.getDefault()),
@@ -120,6 +125,25 @@ public class UserService {
         }
     }
 
+    @Transactional(readOnly = true)
+    public Optional<UserEntity> getUserInfoByToken(String token) {
+        String email = getTokenDecodeUserId(token);
+        
+        Optional<UserEntity> userOpt = userRepository.findByEmail(email);
+        if (userOpt.isEmpty()) {
+            return Optional.empty();
+        }
+
+        UserEntity user = userOpt.get();
+        if (!checkUserCheck(user.getId().toString())) {
+            throw new CustomException(FAIL_500.code(),
+                    messageSource.getMessage("user.un.auth", null, Locale.getDefault()),
+                    HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        return userOpt;
+    }
+
     /**
      * 사용자 체크 메서드
      *
@@ -128,8 +152,9 @@ public class UserService {
      */
     public boolean checkUserCheck(String userId) {
         return SecurityUtil.getCurrentUserName()
-                .filter(userId::equals)
                 .flatMap(userRepository::findByEmail)
+                .filter(user -> user.getEmail().equals(userId) || 
+                               user.getRole().equals(Role.ROLE_MASTER.code()))
                 .isPresent();
     }
 
@@ -167,6 +192,7 @@ public class UserService {
 
     private void updateCommonFields(UserEntity existingUser, UserUpdateRequestDto dto) {
         Optional.ofNullable(dto.getUserName()).ifPresent(existingUser::setUserName);
+        Optional.ofNullable(dto.getNickName()).ifPresent(existingUser::setNickName);
         Optional.ofNullable(dto.getPhone()).ifPresent(existingUser::setPhone);
         Optional.ofNullable(dto.getEmail()).ifPresent(existingUser::setEmail);
     }
@@ -175,5 +201,11 @@ public class UserService {
         Optional.ofNullable(dto.getPassword())
                 .map(passwordEncoder::encode)
                 .ifPresent(existingUser::setPassword);
+    }
+
+    private String getTokenDecodeUserId(String token) {
+        Authentication authentication = tokenProvider.getAuthentication(token);
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        return userDetails.getUsername();
     }
 }

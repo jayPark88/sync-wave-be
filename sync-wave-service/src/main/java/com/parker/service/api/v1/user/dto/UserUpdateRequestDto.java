@@ -7,11 +7,11 @@ import lombok.*;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class UserUpdateRequestDto {
+public class UserUpdateRequestDto extends UserInfoRequestDto{
     private String userName;
     private String password;
     private String phone;
     private String email;
     private String role;
-    private String type;
+    private String nickName;
 }

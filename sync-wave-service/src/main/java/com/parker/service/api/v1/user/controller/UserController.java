@@ -5,6 +5,7 @@ import com.parker.common.jpa.entity.UserEntity;
 import com.parker.common.resonse.CommonResponse;
 import com.parker.service.api.v1.user.dto.UserDto;
 import com.parker.service.api.v1.user.dto.UserUpdateRequestDto;
+import com.parker.service.api.v1.user.dto.UserInfoRequestDto;
 import com.parker.service.api.v1.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -62,9 +63,9 @@ public class UserController {
         }
     }
 
-    @PatchMapping("/{userId}")
-    public CommonResponse<UserEntity> modifyUserInfo(@PathVariable("userId") String userId, @RequestBody UserUpdateRequestDto userUpdateRequestDto) {
-        return new CommonResponse<>(userService.updateUser(userId, userUpdateRequestDto));
+    @PatchMapping
+    public CommonResponse<UserEntity> modifyUserInfo(@RequestBody UserUpdateRequestDto userUpdateRequestDto) {
+        return new CommonResponse<>(userService.updateUser(userUpdateRequestDto));
     }
 
     @DeleteMapping("/{userId}")
@@ -83,9 +84,12 @@ public class UserController {
         return new CommonResponse<>(userService.searchUserList(page, size));
     }
 
-    @GetMapping("/{userId}")
-    public CommonResponse<UserEntity> getUserInfo(@PathVariable(name = "userId") String userId) {
-        return new CommonResponse<>(userService.getUserInfo(userId).orElseThrow(() -> new CustomException(FAIL_500.code(), messageSource.getMessage("user.not.found", null, Locale.getDefault()), HttpStatus.INTERNAL_SERVER_ERROR)));
+    @PostMapping("/info")
+    public CommonResponse<UserEntity> getUserInfo(@RequestBody UserInfoRequestDto requestDto) {
+        return new CommonResponse<>(userService.getUserInfoByToken(requestDto.getToken())
+                .orElseThrow(() -> new CustomException(FAIL_500.code(), 
+                        messageSource.getMessage("user.not.found", null, Locale.getDefault()), 
+                        HttpStatus.INTERNAL_SERVER_ERROR)));
     }
 
 }

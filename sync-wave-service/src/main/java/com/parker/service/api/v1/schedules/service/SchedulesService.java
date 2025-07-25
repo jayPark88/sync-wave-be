@@ -15,8 +15,10 @@ import org.springframework.context.MessageSource;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -41,17 +43,13 @@ public class SchedulesService {
      */
     public SchedulesEntity createSchedules(SchedulesDto schedulesDto) {
         Long userId = userService.getUserId();
-        if (checkDuplicateSchedules(schedulesDto, userId)) {
-            return schedulesRepository.save(SchedulesEntity.builder()
-                    .title(schedulesDto.getTitle())
-                    .description(schedulesDto.getDescription())
-                    .startDateTime(schedulesDto.getStartDateTime())
-                    .endDateTime(schedulesDto.getEndDateTime())
-                    .userId(userId)
-                    .build());
-        } else {
-            throw new CustomException(FAIL_400.code(), messageSource.getMessage("schedules.duplicate", null, Locale.getDefault()), HttpStatus.BAD_REQUEST);
-        }
+        return schedulesRepository.save(SchedulesEntity.builder()
+                .title(schedulesDto.getTitle())
+                .description(schedulesDto.getDescription())
+                .startDateTime(schedulesDto.getStartDateTime())
+                .endDateTime(schedulesDto.getEndDateTime())
+                .userId(userId)
+                .build());
     }
 
     /**
@@ -79,7 +77,20 @@ public class SchedulesService {
      */
     public List<SchedulesEntity> getDetailScheduleList(SearchSchedulesDto searchSchedulesDto) {
         Long userId = userService.getUserId();
-        List<SchedulesEntity> schedulesEntityList = schedulesRepository.findByUserIdAndStartDateTimeBetween(userId, searchSchedulesDto.getStartDate().atStartOfDay(), searchSchedulesDto.getEndDate().atTime(23, 59, 59));
+        List<SchedulesEntity> schedulesEntityList;
+        
+        // 날짜 범위가 지정된 경우와 아닌 경우를 구분
+        if (searchSchedulesDto.getStartDate() != null && searchSchedulesDto.getEndDate() != null) {
+            // 날짜 범위로 조회
+            schedulesEntityList = schedulesRepository.findByUserIdAndStartDateTimeBetween(
+                userId, 
+                searchSchedulesDto.getStartDate().atStartOfDay(), 
+                searchSchedulesDto.getEndDate().atTime(23, 59, 59)
+            );
+        } else {
+            // 모든 일정 조회
+            schedulesEntityList = schedulesRepository.findByUserId(userId);
+        }
 
         if (!schedulesEntityList.isEmpty()) {
             if (!ObjectUtils.isEmpty(searchSchedulesDto.getTitle())) {
@@ -94,7 +105,8 @@ public class SchedulesService {
             }
             return schedulesEntityList;
         } else {
-            throw new CustomException(FAIL_400.code(), messageSource.getMessage("schedules.data.not.found", null, Locale.getDefault()), HttpStatus.BAD_REQUEST);
+            log.info("schedulesEntityList is empty");
+            return new ArrayList<>();
         }
     }
 
@@ -102,6 +114,7 @@ public class SchedulesService {
      * @param scheduleId
      * @param schedulesDto
      */
+    @Transactional
     public SchedulesEntity modifyScheduleInfo(Long scheduleId, SchedulesDto schedulesDto) {
         if (SecurityUtil.getCurrentUserName().isPresent() && !userService.checkUserCheck(SecurityUtil.getCurrentUserName().get())) {
             throw new CustomException(FAIL_500.code(),
@@ -112,7 +125,7 @@ public class SchedulesService {
         return schedulesRepository.findById(scheduleId).map(
                 existingSchedule -> {
                     updateFields(existingSchedule, schedulesDto);
-                    return existingSchedule;
+                    return schedulesRepository.save(existingSchedule);
                 }
         ).orElseThrow(
                 () -> new CustomException(FAIL_500.code(),
@@ -139,25 +152,18 @@ public class SchedulesService {
 
 
 
-    /**
-     * 중복 스케쥴 체크
-     *
-     * @param schedulesDto
-     * @return
-     */
-    private boolean checkDuplicateSchedules(SchedulesDto schedulesDto, Long userId) {
-        return schedulesRepository.findByUserIdAndStartDateTime(userId, schedulesDto.getStartDateTime()).isEmpty();
-    }
+
 
     /**
      * @param existingSchedule
      * @param schedulesDto
      */
     private void updateFields(SchedulesEntity existingSchedule, SchedulesDto schedulesDto) {
-        Optional.ofNullable(schedulesDto.getTitle()).ifPresent(existingSchedule::setTitle);
-        Optional.ofNullable(schedulesDto.getDescription()).ifPresent(existingSchedule::setDescription);
-        Optional.ofNullable(schedulesDto.getStartDateTime()).ifPresent(existingSchedule::setStartDateTime);
-        Optional.ofNullable(schedulesDto.getEndDateTime()).ifPresent(existingSchedule::setEndDateTime);
+        // 명시적으로 모든 필드를 업데이트
+        existingSchedule.setTitle(schedulesDto.getTitle());
+        existingSchedule.setDescription(schedulesDto.getDescription());
+        existingSchedule.setStartDateTime(schedulesDto.getStartDateTime());
+        existingSchedule.setEndDateTime(schedulesDto.getEndDateTime());
     }
 
 }

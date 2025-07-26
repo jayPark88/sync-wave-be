@@ -30,4 +30,10 @@ public class NoticeSearchDto {
     private String keyword; // 제목 또는 내용 검색 키워드
     private String priority; // 중요도 필터 (HIGH, MEDIUM, LOW)
     private Boolean isActive; // 활성화 상태 필터 (true, false)
+    
+    // 페이징 파라미터
+    @Builder.Default
+    private Integer page = 0; // 페이지 번호 (0부터 시작)
+    @Builder.Default
+    private Integer size = 10; // 페이지 크기
 } 

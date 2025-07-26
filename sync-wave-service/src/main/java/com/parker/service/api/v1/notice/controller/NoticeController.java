@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -55,19 +56,19 @@ public class NoticeController {
     }
 
     /**
-     * 공지사항 목록 조회 (모든 사용자 가능)
+     * 공지사항 목록 조회 (모든 사용자 가능) - 페이징 지원
      * @param searchDto 검색 조건
-     * @return 공지사항 목록
+     * @return 페이징된 공지사항 목록
      */
-    @Operation(summary = "공지사항 목록 조회", description = "공지사항 목록을 조회합니다. (모든 사용자 가능)")
+    @Operation(summary = "공지사항 목록 조회", description = "공지사항 목록을 페이징하여 조회합니다. (모든 사용자 가능)")
     @GetMapping
-    public CommonResponse<List<NoticeEntity>> getNoticeList(
+    public CommonResponse<Page<NoticeEntity>> getNoticeList(
             @ModelAttribute NoticeSearchDto searchDto) {
         log.info("공지사항 목록 조회 요청");
         
-        List<NoticeEntity> noticeList = noticeService.getNoticeList(searchDto);
+        Page<NoticeEntity> noticePage = noticeService.getNoticeList(searchDto);
         
-        return new CommonResponse<>(noticeList);
+        return new CommonResponse<>(noticePage);
     }
 
     /**

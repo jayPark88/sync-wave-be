@@ -16,8 +16,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 import java.util.Locale;
 
 import static com.parker.common.exception.enums.ResponseErrorCode.FAIL_500;
@@ -84,6 +82,8 @@ public class NoticeService {
         int size = searchDto.getSize() != null ? searchDto.getSize() : 10;
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDateTime"));
         
+        log.info("페이징 정보 - page: {}, size: {}", page, size);
+        
         if (searchDto == null) {
             // 검색 조건이 없으면 모든 공지사항 조회
             log.info("검색 조건이 없어 모든 공지사항 조회");
@@ -94,7 +94,10 @@ public class NoticeService {
         log.info("isActive 필터링: {}", searchDto.getIsActive());
         if (searchDto.getIsActive() != null) {
             // 활성화 상태만으로 필터링 (다른 조건들은 클라이언트에서 처리)
-            return noticeRepository.findByIsActive(searchDto.getIsActive(), pageable);
+            Page<NoticeEntity> result = noticeRepository.findByIsActive(searchDto.getIsActive(), pageable);
+            log.info("활성화 상태 필터링 결과 - 총 개수: {}, 현재 페이지 크기: {}, 총 페이지: {}", 
+                    result.getTotalElements(), result.getNumberOfElements(), result.getTotalPages());
+            return result;
         }
 
         // isActive가 null인 경우 (모든 상태 조회) 또는 isActive 필터링이 지정되지 않은 경우
@@ -116,7 +119,16 @@ public class NoticeService {
         }
 
         // 기본적으로 모든 공지사항 조회
-        return noticeRepository.findAll(pageable);
+        Page<NoticeEntity> result = noticeRepository.findAll(pageable);
+        log.info("전체 공지사항 조회 결과 - 총 개수: {}, 현재 페이지 크기: {}, 총 페이지: {}", 
+                result.getTotalElements(), result.getNumberOfElements(), result.getTotalPages());
+        
+        // 전체 개수와 활성화된 개수 비교
+        long totalCount = noticeRepository.count();
+        long activeCount = noticeRepository.countByIsActiveTrue();
+        log.info("전체 공지사항 개수: {}, 활성화된 공지사항 개수: {}", totalCount, activeCount);
+        
+        return result;
     }
 
     /**
@@ -129,6 +141,26 @@ public class NoticeService {
                 .orElseThrow(() -> new CustomException(FAIL_500.code(), 
                     messageSource.getMessage("notice.not.found", null, Locale.getDefault()), 
                     HttpStatus.INTERNAL_SERVER_ERROR));
+    }
+    
+    /**
+     * 공지사항 상세 조회 (ROLE_USER는 활성화된 공지사항만 조회 가능)
+     * @param noticeId 공지사항 ID
+     * @return 공지사항 상세 정보
+     */
+    public NoticeEntity getNoticeDetailForUser(Long noticeId) {
+        NoticeEntity notice = noticeRepository.findById(noticeId)
+                .orElseThrow(() -> new CustomException(FAIL_500.code(), 
+                    messageSource.getMessage("notice.not.found", null, Locale.getDefault()), 
+                    HttpStatus.INTERNAL_SERVER_ERROR));
+        
+        // ROLE_USER는 활성화된 공지사항만 조회 가능
+        if (!isMasterUser() && !notice.getIsActive()) {
+            throw new CustomException(FAIL_500.code(), 
+                "비활성화된 공지사항은 조회할 수 없습니다.", HttpStatus.FORBIDDEN);
+        }
+        
+        return notice;
     }
 
     /**
@@ -205,5 +237,22 @@ public class NoticeService {
             throw new CustomException(FAIL_500.code(), 
                 "공지사항 관리 권한이 없습니다.", HttpStatus.FORBIDDEN);
         }
+    }
+    
+    /**
+     * 현재 사용자의 권한 확인
+     * @return 사용자 권한 (ROLE_MASTER 또는 ROLE_USER)
+     */
+    private String getCurrentUserRole() {
+        return SecurityUtil.getCurrentUserRole()
+                .orElse("ROLE_USER"); // 기본값은 ROLE_USER
+    }
+    
+    /**
+     * 마스터 권한 여부 확인
+     * @return 마스터 권한 여부
+     */
+    private boolean isMasterUser() {
+        return "ROLE_MASTER".equals(getCurrentUserRole());
     }
 } 

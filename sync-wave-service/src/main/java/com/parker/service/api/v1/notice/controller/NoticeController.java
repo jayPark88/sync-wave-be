@@ -2,6 +2,7 @@ package com.parker.service.api.v1.notice.controller;
 
 import com.parker.common.jpa.entity.NoticeEntity;
 import com.parker.common.resonse.CommonResponse;
+import com.parker.common.util.security.SecurityUtil;
 import com.parker.service.api.v1.notice.dto.NoticeDto;
 import com.parker.service.api.v1.notice.dto.NoticeSearchDto;
 import com.parker.service.api.v1.notice.service.NoticeService;
@@ -70,18 +71,33 @@ public class NoticeController {
         
         return new CommonResponse<>(noticePage);
     }
+    
+    /**
+     * 사용자 권한 정보 조회
+     * @return 현재 사용자의 권한 정보
+     */
+    @Operation(summary = "사용자 권한 조회", description = "현재 로그인한 사용자의 권한 정보를 조회합니다.")
+    @GetMapping("/user-role")
+    public CommonResponse<String> getUserRole() {
+        log.info("사용자 권한 조회 요청");
+        
+        String userRole = SecurityUtil.getCurrentUserRole()
+                .orElse("ROLE_USER");
+        
+        return new CommonResponse<>(userRole);
+    }
 
     /**
-     * 공지사항 상세 조회 (모든 사용자 가능)
+     * 공지사항 상세 조회 (권한별 차등 적용)
      * @param noticeId 공지사항 ID
      * @return 공지사항 상세 정보
      */
-    @Operation(summary = "공지사항 상세 조회", description = "특정 공지사항의 상세 정보를 조회합니다. (모든 사용자 가능)")
+    @Operation(summary = "공지사항 상세 조회", description = "특정 공지사항의 상세 정보를 조회합니다. (ROLE_USER는 활성화된 공지사항만 조회 가능)")
     @GetMapping("/{noticeId}")
     public CommonResponse<NoticeEntity> getNoticeDetail(@PathVariable("noticeId") Long noticeId) {
         log.info("공지사항 상세 조회 요청: {}", noticeId);
         
-        NoticeEntity notice = noticeService.getNoticeDetail(noticeId);
+        NoticeEntity notice = noticeService.getNoticeDetailForUser(noticeId);
         
         return new CommonResponse<>(notice);
     }

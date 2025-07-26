@@ -79,13 +79,13 @@ class NoticeIntegrationTest {
      * 공지사항 전체 플로우 통합 테스트
      * 
      * 테스트 시나리오:
-     * 1. 공지사항 생성 (POST /service/v1/notices)
-     * 2. 공지사항 목록 조회 (GET /service/v1/notices)
-     * 3. 공지사항 상세 조회 (GET /service/v1/notices/{id})
-     * 4. 공지사항 수정 (PUT /service/v1/notices/{id})
-     * 5. 공지사항 상태 변경 (PATCH /service/v1/notices/{id}/status)
-     * 6. 공지사항 삭제 (DELETE /service/v1/notices/{id})
-     * 7. 삭제 확인 (GET /service/v1/notices/{id} - 500 에러)
+     * 1. 공지사항 생성 (POST /v1/notices)
+     * 2. 공지사항 목록 조회 (GET /v1/notices)
+     * 3. 공지사항 상세 조회 (GET /v1/notices/{id})
+     * 4. 공지사항 수정 (PUT /v1/notices/{id})
+     * 5. 공지사항 상태 변경 (PATCH /v1/notices/{id}/status)
+     * 6. 공지사항 삭제 (DELETE /v1/notices/{id})
+     * 7. 삭제 확인 (GET /v1/notices/{id} - 500 에러)
      * 
      * 검증 포인트:
      * - 전체 CRUD 플로우가 정상 동작하는지 확인
@@ -97,7 +97,7 @@ class NoticeIntegrationTest {
     @DisplayName("공지사항 전체 플로우 통합 테스트")
     void noticeFullFlowIntegrationTest() throws Exception {
         // 1. 공지사항 생성
-        String createResponse = mockMvc.perform(post("/service/v1/notices")
+        String createResponse = mockMvc.perform(post("/v1/notices")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(testNoticeDto)))
                 .andExpect(status().isCreated())
@@ -111,14 +111,14 @@ class NoticeIntegrationTest {
         Long noticeId = extractNoticeIdFromResponse(createResponse);
 
         // 2. 공지사항 목록 조회
-        mockMvc.perform(get("/service/v1/notices"))
+        mockMvc.perform(get("/v1/notices"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result").value(true))
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data[?(@.id == " + noticeId + ")]").exists());
 
         // 3. 공지사항 상세 조회
-        mockMvc.perform(get("/service/v1/notices/" + noticeId))
+        mockMvc.perform(get("/v1/notices/" + noticeId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result").value(true))
                 .andExpect(jsonPath("$.data.id").value(noticeId))
@@ -131,7 +131,7 @@ class NoticeIntegrationTest {
                 .priority("MEDIUM")
                 .build();
 
-        mockMvc.perform(put("/service/v1/notices/" + noticeId)
+        mockMvc.perform(put("/v1/notices/" + noticeId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateDto)))
                 .andExpect(status().isOk())
@@ -139,19 +139,19 @@ class NoticeIntegrationTest {
                 .andExpect(jsonPath("$.data.title").value("수정된 통합 테스트 공지사항"));
 
         // 5. 공지사항 상태 변경 (비활성화)
-        mockMvc.perform(patch("/service/v1/notices/" + noticeId + "/status")
+        mockMvc.perform(patch("/v1/notices/" + noticeId + "/status")
                         .param("isActive", "false"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result").value(true))
                 .andExpect(jsonPath("$.data.isActive").value(false));
 
         // 6. 공지사항 삭제
-        mockMvc.perform(delete("/service/v1/notices/" + noticeId))
+        mockMvc.perform(delete("/v1/notices/" + noticeId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result").value(true));
 
         // 7. 삭제 확인 (존재하지 않는 공지사항 조회 시 에러)
-        mockMvc.perform(get("/service/v1/notices/" + noticeId))
+        mockMvc.perform(get("/v1/notices/" + noticeId))
                 .andExpect(status().isInternalServerError());
     }
 
@@ -198,7 +198,7 @@ class NoticeIntegrationTest {
         noticeRepository.save(notice2);
 
         // 키워드 검색 테스트
-        mockMvc.perform(get("/service/v1/notices")
+        mockMvc.perform(get("/v1/notices")
                         .param("keyword", "검색 테스트"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result").value(true))
@@ -206,7 +206,7 @@ class NoticeIntegrationTest {
                 .andExpect(jsonPath("$.data.length()").value(2));
 
         // 중요도별 검색 테스트
-        mockMvc.perform(get("/service/v1/notices")
+        mockMvc.perform(get("/v1/notices")
                         .param("priority", "HIGH"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result").value(true))
@@ -239,7 +239,7 @@ class NoticeIntegrationTest {
                 .priority("HIGH")
                 .build();
 
-        mockMvc.perform(post("/service/v1/notices")
+        mockMvc.perform(post("/v1/notices")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidTitleDto)))
                 .andExpect(status().isBadRequest());
@@ -251,7 +251,7 @@ class NoticeIntegrationTest {
                 .priority("HIGH")
                 .build();
 
-        mockMvc.perform(post("/service/v1/notices")
+        mockMvc.perform(post("/v1/notices")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidContentDto)))
                 .andExpect(status().isBadRequest());
@@ -263,7 +263,7 @@ class NoticeIntegrationTest {
                 .priority("")
                 .build();
 
-        mockMvc.perform(post("/service/v1/notices")
+        mockMvc.perform(post("/v1/notices")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidPriorityDto)))
                 .andExpect(status().isBadRequest());

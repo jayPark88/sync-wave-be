@@ -10,8 +10,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -34,7 +32,7 @@ import java.util.List;
  */
 @Tag(name = "Notice", description = "공지사항 API")
 @RestController
-@RequestMapping("/service/v1/notices")
+@RequestMapping("/v1/notices")
 @RequiredArgsConstructor
 @Slf4j
 public class NoticeController {
@@ -48,13 +46,12 @@ public class NoticeController {
      */
     @Operation(summary = "공지사항 생성", description = "새로운 공지사항을 생성합니다. (ROLE_MASTER만 가능)")
     @PostMapping
-    public ResponseEntity<CommonResponse<NoticeEntity>> createNotice(@Valid @RequestBody NoticeDto noticeDto) {
+    public CommonResponse<NoticeEntity> createNotice(@Valid @RequestBody NoticeDto noticeDto) {
         log.info("공지사항 생성 요청: {}", noticeDto.getTitle());
         
         NoticeEntity createdNotice = noticeService.createNotice(noticeDto);
         
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new CommonResponse<>(createdNotice));
+        return new CommonResponse<>(createdNotice);
     }
 
     /**
@@ -64,13 +61,13 @@ public class NoticeController {
      */
     @Operation(summary = "공지사항 목록 조회", description = "공지사항 목록을 조회합니다. (모든 사용자 가능)")
     @GetMapping
-    public ResponseEntity<CommonResponse<List<NoticeEntity>>> getNoticeList(
+    public CommonResponse<List<NoticeEntity>> getNoticeList(
             @ModelAttribute NoticeSearchDto searchDto) {
         log.info("공지사항 목록 조회 요청");
         
         List<NoticeEntity> noticeList = noticeService.getNoticeList(searchDto);
         
-        return ResponseEntity.ok(new CommonResponse<>(noticeList));
+        return new CommonResponse<>(noticeList);
     }
 
     /**
@@ -80,12 +77,12 @@ public class NoticeController {
      */
     @Operation(summary = "공지사항 상세 조회", description = "특정 공지사항의 상세 정보를 조회합니다. (모든 사용자 가능)")
     @GetMapping("/{noticeId}")
-    public ResponseEntity<CommonResponse<NoticeEntity>> getNoticeDetail(@PathVariable Long noticeId) {
+    public CommonResponse<NoticeEntity> getNoticeDetail(@PathVariable("noticeId") Long noticeId) {
         log.info("공지사항 상세 조회 요청: {}", noticeId);
         
         NoticeEntity notice = noticeService.getNoticeDetail(noticeId);
         
-        return ResponseEntity.ok(new CommonResponse<>(notice));
+        return new CommonResponse<>(notice);
     }
 
     /**
@@ -96,14 +93,14 @@ public class NoticeController {
      */
     @Operation(summary = "공지사항 수정", description = "공지사항을 수정합니다. (ROLE_MASTER만 가능)")
     @PutMapping("/{noticeId}")
-    public ResponseEntity<CommonResponse<NoticeEntity>> updateNotice(
-            @PathVariable Long noticeId, 
+    public CommonResponse<NoticeEntity> updateNotice(
+            @PathVariable("noticeId") Long noticeId, 
             @Valid @RequestBody NoticeDto noticeDto) {
         log.info("공지사항 수정 요청: {}", noticeId);
         
         NoticeEntity updatedNotice = noticeService.updateNotice(noticeId, noticeDto);
         
-        return ResponseEntity.ok(new CommonResponse<>(updatedNotice));
+        return new CommonResponse<>(updatedNotice);
     }
 
     /**
@@ -114,14 +111,14 @@ public class NoticeController {
      */
     @Operation(summary = "공지사항 상태 변경", description = "공지사항의 활성화 상태를 변경합니다. (ROLE_MASTER만 가능)")
     @PatchMapping("/{noticeId}/status")
-    public ResponseEntity<CommonResponse<NoticeEntity>> updateNoticeStatus(
-            @PathVariable Long noticeId, 
-            @RequestParam Boolean isActive) {
+    public CommonResponse<NoticeEntity> updateNoticeStatus(
+            @PathVariable("noticeId") Long noticeId, 
+            @RequestParam("isActive") Boolean isActive) {
         log.info("공지사항 상태 변경 요청: {}, isActive: {}", noticeId, isActive);
         
         NoticeEntity updatedNotice = noticeService.updateNoticeStatus(noticeId, isActive);
         
-        return ResponseEntity.ok(new CommonResponse<>(updatedNotice));
+        return new CommonResponse<>(updatedNotice);
     }
 
     /**
@@ -131,11 +128,11 @@ public class NoticeController {
      */
     @Operation(summary = "공지사항 삭제", description = "공지사항을 삭제합니다. (ROLE_MASTER만 가능)")
     @DeleteMapping("/{noticeId}")
-    public ResponseEntity<CommonResponse<Void>> deleteNotice(@PathVariable Long noticeId) {
+    public CommonResponse<String> deleteNotice(@PathVariable("noticeId") Long noticeId) {
         log.info("공지사항 삭제 요청: {}", noticeId);
         
         noticeService.deleteNotice(noticeId);
         
-        return ResponseEntity.ok(new CommonResponse<>(null));
+        return new CommonResponse<>("공지사항이 삭제되었습니다.");
     }
 } 

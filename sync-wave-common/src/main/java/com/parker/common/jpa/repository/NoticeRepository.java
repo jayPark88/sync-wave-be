@@ -73,4 +73,46 @@ public interface NoticeRepository extends JpaRepository<NoticeEntity, Long> {
      * @return 활성화된 공지사항 개수
      */
     long countByIsActiveTrue();
+    
+    /**
+     * 모든 공지사항 목록을 최신순으로 조회 (활성화 상태 무관)
+     * @return 모든 공지사항 목록
+     */
+    List<NoticeEntity> findAllByOrderByCreatedDateTimeDesc();
+    
+    /**
+     * 특정 활성화 상태의 공지사항 목록을 최신순으로 조회
+     * @param isActive 활성화 상태
+     * @return 해당 상태의 공지사항 목록
+     */
+    List<NoticeEntity> findByIsActiveOrderByCreatedDateTimeDesc(Boolean isActive);
+    
+    /**
+     * 특정 중요도의 공지사항 목록을 최신순으로 조회 (활성화 상태 무관)
+     * @param priority 중요도
+     * @return 해당 중요도의 공지사항 목록
+     */
+    List<NoticeEntity> findByPriorityOrderByCreatedDateTimeDesc(String priority);
+    
+    /**
+     * 제목으로 공지사항 검색 (활성화 상태 무관)
+     * @param title 검색할 제목
+     * @return 해당 제목의 공지사항 목록
+     */
+    List<NoticeEntity> findByTitleContainingOrderByCreatedDateTimeDesc(String title);
+    
+    /**
+     * 내용으로 공지사항 검색 (활성화 상태 무관)
+     * @param content 검색할 내용
+     * @return 해당 내용이 포함된 공지사항 목록
+     */
+    List<NoticeEntity> findByContentContainingOrderByCreatedDateTimeDesc(String content);
+    
+    /**
+     * 제목 또는 내용으로 공지사항 검색 (활성화 상태 무관)
+     * @param keyword 검색 키워드
+     * @return 제목 또는 내용에 키워드가 포함된 공지사항 목록
+     */
+    @Query("SELECT n FROM NoticeEntity n WHERE n.title LIKE %:keyword% OR n.content LIKE %:keyword% ORDER BY n.createdDateTime DESC")
+    List<NoticeEntity> findByTitleOrContentContaining(@Param("keyword") String keyword);
 } 

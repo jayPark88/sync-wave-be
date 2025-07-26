@@ -73,30 +73,73 @@ public class NoticeService {
      * @return 공지사항 목록
      */
     public List<NoticeEntity> getNoticeList(NoticeSearchDto searchDto) {
+        log.info("공지사항 목록 조회 요청 - searchDto: {}", searchDto);
+        
         if (searchDto == null) {
-            // 검색 조건이 없으면 활성화된 공지사항만 조회
-            return noticeRepository.findByIsActiveTrueOrderByCreatedDateTimeDesc();
+            // 검색 조건이 없으면 모든 공지사항 조회
+            log.info("검색 조건이 없어 모든 공지사항 조회");
+            return noticeRepository.findAllByOrderByCreatedDateTimeDesc();
         }
 
-        // 검색 조건에 따른 조회
+        // isActive 필터링이 명시적으로 지정된 경우 (true/false)
+        log.info("isActive 필터링: {}", searchDto.getIsActive());
+        if (searchDto.getIsActive() != null) {
+            if (searchDto.getKeyword() != null && !searchDto.getKeyword().trim().isEmpty()) {
+                // 키워드 검색 + 활성화 상태 필터링
+                List<NoticeEntity> allNotices = noticeRepository.findByTitleOrContentContaining(searchDto.getKeyword().trim());
+                return allNotices.stream()
+                        .filter(notice -> notice.getIsActive().equals(searchDto.getIsActive()))
+                        .toList();
+            }
+
+            if (searchDto.getTitle() != null && !searchDto.getTitle().trim().isEmpty()) {
+                // 제목 검색 + 활성화 상태 필터링
+                List<NoticeEntity> allNotices = noticeRepository.findByTitleContainingOrderByCreatedDateTimeDesc(searchDto.getTitle().trim());
+                return allNotices.stream()
+                        .filter(notice -> notice.getIsActive().equals(searchDto.getIsActive()))
+                        .toList();
+            }
+
+            if (searchDto.getContent() != null && !searchDto.getContent().trim().isEmpty()) {
+                // 내용 검색 + 활성화 상태 필터링
+                List<NoticeEntity> allNotices = noticeRepository.findByContentContainingOrderByCreatedDateTimeDesc(searchDto.getContent().trim());
+                return allNotices.stream()
+                        .filter(notice -> notice.getIsActive().equals(searchDto.getIsActive()))
+                        .toList();
+            }
+
+            if (searchDto.getPriority() != null && !searchDto.getPriority().trim().isEmpty()) {
+                // 중요도 검색 + 활성화 상태 필터링
+                List<NoticeEntity> allNotices = noticeRepository.findByPriorityOrderByCreatedDateTimeDesc(searchDto.getPriority().trim());
+                return allNotices.stream()
+                        .filter(notice -> notice.getIsActive().equals(searchDto.getIsActive()))
+                        .toList();
+            }
+
+            // 활성화 상태만으로 필터링
+            return noticeRepository.findByIsActiveOrderByCreatedDateTimeDesc(searchDto.getIsActive());
+        }
+
+        // isActive가 null인 경우 (모든 상태 조회) 또는 isActive 필터링이 지정되지 않은 경우
+        log.info("모든 상태 조회 또는 필터링 미지정");
         if (searchDto.getKeyword() != null && !searchDto.getKeyword().trim().isEmpty()) {
-            return noticeRepository.findByTitleOrContentContainingAndIsActiveTrue(searchDto.getKeyword().trim());
+            return noticeRepository.findByTitleOrContentContaining(searchDto.getKeyword().trim());
         }
 
         if (searchDto.getTitle() != null && !searchDto.getTitle().trim().isEmpty()) {
-            return noticeRepository.findByTitleContainingAndIsActiveTrueOrderByCreatedDateTimeDesc(searchDto.getTitle().trim());
+            return noticeRepository.findByTitleContainingOrderByCreatedDateTimeDesc(searchDto.getTitle().trim());
         }
 
         if (searchDto.getContent() != null && !searchDto.getContent().trim().isEmpty()) {
-            return noticeRepository.findByContentContainingAndIsActiveTrueOrderByCreatedDateTimeDesc(searchDto.getContent().trim());
+            return noticeRepository.findByContentContainingOrderByCreatedDateTimeDesc(searchDto.getContent().trim());
         }
 
         if (searchDto.getPriority() != null && !searchDto.getPriority().trim().isEmpty()) {
-            return noticeRepository.findByPriorityAndIsActiveTrueOrderByCreatedDateTimeDesc(searchDto.getPriority().trim());
+            return noticeRepository.findByPriorityOrderByCreatedDateTimeDesc(searchDto.getPriority().trim());
         }
 
-        // 기본적으로 활성화된 공지사항만 조회
-        return noticeRepository.findByIsActiveTrueOrderByCreatedDateTimeDesc();
+        // 기본적으로 모든 공지사항 조회
+        return noticeRepository.findAllByOrderByCreatedDateTimeDesc();
     }
 
     /**

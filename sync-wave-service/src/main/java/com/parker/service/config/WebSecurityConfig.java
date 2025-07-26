@@ -69,6 +69,8 @@ public class WebSecurityConfig {
                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // OPTIONS 요청 허용
                                 .requestMatchers(new MvcRequestMatcher(introspector, "/v1/auth/**")).permitAll()
                                 .requestMatchers(new MvcRequestMatcher(introspector, "/v1/user/signUp")).permitAll()
+                                .requestMatchers(new MvcRequestMatcher(introspector, "/v1/notices")).permitAll() // 공지사항 조회는 모든 사용자 허용
+                                .requestMatchers(new MvcRequestMatcher(introspector, "/v1/notices/**")).permitAll() // 공지사항 상세 조회도 허용
                                 .anyRequest().authenticated()
                 )
                 // 세션을 사용하지 않기 때문에 STATELESS로 설정

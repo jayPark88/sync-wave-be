@@ -84,7 +84,7 @@ class NoticeControllerTest {
      * 공지사항 생성 API 테스트 - 성공 케이스
      * 
      * 테스트 시나리오:
-     * 1. POST /service/v1/notices 엔드포인트 호출
+     * 1. POST /v1/notices 엔드포인트 호출
      * 2. JSON 형태의 공지사항 데이터 전송
      * 3. HTTP 상태 코드 201 (Created) 반환 확인
      * 4. 응답 JSON 구조 검증 (result, data)
@@ -97,7 +97,7 @@ class NoticeControllerTest {
         when(noticeService.createNotice(any(NoticeDto.class))).thenReturn(testNotice);
 
         // when & then - 테스트 실행 및 검증 단계
-        mockMvc.perform(post("/service/v1/notices")  // POST 요청
+        mockMvc.perform(post("/v1/notices")  // POST 요청
                         .contentType(MediaType.APPLICATION_JSON)  // JSON 컨텐츠 타입
                         .content(objectMapper.writeValueAsString(testNoticeDto)))  // JSON 데이터 전송
                 .andExpect(status().isCreated())  // HTTP 201 상태 코드 확인
@@ -112,7 +112,7 @@ class NoticeControllerTest {
      * 공지사항 목록 조회 API 테스트 - 성공 케이스
      * 
      * 테스트 시나리오:
-     * 1. GET /service/v1/notices 엔드포인트 호출
+     * 1. GET /v1/notices 엔드포인트 호출
      * 2. HTTP 상태 코드 200 (OK) 반환 확인
      * 3. 응답 JSON 구조 검증 (result, data 배열)
      * 4. 반환된 배열의 첫 번째 요소 검증
@@ -127,7 +127,7 @@ class NoticeControllerTest {
         when(noticeService.getNoticeList(any(NoticeSearchDto.class))).thenReturn(noticeList);
 
         // when & then - 테스트 실행 및 검증 단계
-        mockMvc.perform(get("/service/v1/notices"))  // GET 요청
+        mockMvc.perform(get("/v1/notices"))  // GET 요청
                 .andExpect(status().isOk())  // HTTP 200 상태 코드 확인
                 .andExpect(jsonPath("$.result").value(true))  // 응답의 result 필드가 true인지 확인
                 .andExpect(jsonPath("$.data").isArray())  // data 필드가 배열인지 확인
@@ -145,7 +145,7 @@ class NoticeControllerTest {
         when(noticeService.getNoticeList(any(NoticeSearchDto.class))).thenReturn(noticeList);
 
         // when & then
-        mockMvc.perform(get("/service/v1/notices")
+        mockMvc.perform(get("/v1/notices")
                         .param("keyword", "테스트")
                         .param("priority", "HIGH"))
                 .andExpect(status().isOk())
@@ -159,7 +159,7 @@ class NoticeControllerTest {
      * 공지사항 상세 조회 API 테스트 - 성공 케이스
      * 
      * 테스트 시나리오:
-     * 1. GET /service/v1/notices/{noticeId} 엔드포인트 호출
+     * 1. GET /v1/notices/{noticeId} 엔드포인트 호출
      * 2. HTTP 상태 코드 200 (OK) 반환 확인
      * 3. 응답 JSON 구조 검증 (result, data)
      * 4. 반환된 공지사항 데이터 검증
@@ -172,7 +172,7 @@ class NoticeControllerTest {
         when(noticeService.getNoticeDetail(1L)).thenReturn(testNotice);
 
         // when & then - 테스트 실행 및 검증 단계
-        mockMvc.perform(get("/service/v1/notices/1"))  // GET 요청
+        mockMvc.perform(get("/v1/notices/1"))  // GET 요청
                 .andExpect(status().isOk())  // HTTP 200 상태 코드 확인
                 .andExpect(jsonPath("$.result").value(true))  // 응답의 result 필드가 true인지 확인
                 .andExpect(jsonPath("$.data.title").value("테스트 공지사항"))  // data 필드의 제목 검증
@@ -186,7 +186,7 @@ class NoticeControllerTest {
      * 공지사항 수정 API 테스트 - 성공 케이스
      * 
      * 테스트 시나리오:
-     * 1. PUT /service/v1/notices/{noticeId} 엔드포인트 호출
+     * 1. PUT /v1/notices/{noticeId} 엔드포인트 호출
      * 2. JSON 형태의 수정 데이터 전송
      * 3. HTTP 상태 코드 200 (OK) 반환 확인
      * 4. 응답 JSON 구조 검증 (result, data)
@@ -199,7 +199,7 @@ class NoticeControllerTest {
         when(noticeService.updateNotice(eq(1L), any(NoticeDto.class))).thenReturn(testNotice);
 
         // when & then - 테스트 실행 및 검증 단계
-        mockMvc.perform(put("/service/v1/notices/1")  // PUT 요청
+        mockMvc.perform(put("/v1/notices/1")  // PUT 요청
                         .contentType(MediaType.APPLICATION_JSON)  // JSON 컨텐츠 타입
                         .content(objectMapper.writeValueAsString(testNoticeDto)))  // JSON 데이터 전송
                 .andExpect(status().isOk())  // HTTP 200 상태 코드 확인
@@ -214,7 +214,7 @@ class NoticeControllerTest {
      * 공지사항 상태 변경 API 테스트 - 성공 케이스
      * 
      * 테스트 시나리오:
-     * 1. PATCH /service/v1/notices/{noticeId}/status 엔드포인트 호출
+     * 1. PATCH /v1/notices/{noticeId}/status 엔드포인트 호출
      * 2. 활성화 상태 파라미터 전송
      * 3. HTTP 상태 코드 200 (OK) 반환 확인
      * 4. 응답 JSON 구조 검증 (result, data)
@@ -227,7 +227,7 @@ class NoticeControllerTest {
         when(noticeService.updateNoticeStatus(eq(1L), eq(false))).thenReturn(testNotice);
 
         // when & then - 테스트 실행 및 검증 단계
-        mockMvc.perform(patch("/service/v1/notices/1/status")  // PATCH 요청
+        mockMvc.perform(patch("/v1/notices/1/status")  // PATCH 요청
                         .param("isActive", "false"))  // 활성화 상태 파라미터
                 .andExpect(status().isOk())  // HTTP 200 상태 코드 확인
                 .andExpect(jsonPath("$.result").value(true))  // 응답의 result 필드가 true인지 확인
@@ -241,7 +241,7 @@ class NoticeControllerTest {
      * 공지사항 삭제 API 테스트 - 성공 케이스
      * 
      * 테스트 시나리오:
-     * 1. DELETE /service/v1/notices/{noticeId} 엔드포인트 호출
+     * 1. DELETE /v1/notices/{noticeId} 엔드포인트 호출
      * 2. HTTP 상태 코드 200 (OK) 반환 확인
      * 3. 응답 JSON 구조 검증 (result, data는 null)
      * 4. Service 메서드 호출 확인
@@ -253,7 +253,7 @@ class NoticeControllerTest {
         doNothing().when(noticeService).deleteNotice(1L);
 
         // when & then - 테스트 실행 및 검증 단계
-        mockMvc.perform(delete("/service/v1/notices/1"))  // DELETE 요청
+        mockMvc.perform(delete("/v1/notices/1"))  // DELETE 요청
                 .andExpect(status().isOk())  // HTTP 200 상태 코드 확인
                 .andExpect(jsonPath("$.result").value(true))  // 응답의 result 필드가 true인지 확인
                 .andExpect(jsonPath("$.data").isEmpty());  // data 필드가 null인지 확인

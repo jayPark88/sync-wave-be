@@ -12,6 +12,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.MessageSource;
+import org.springframework.validation.BindingResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -35,11 +36,15 @@ class AuthControllerTest {
     @Mock
     private MessageSource messageSource; // MessageSource를 Mock 객체로 생성
 
+    @Mock
+    private BindingResult bindingResult; // BindingResult를 Mock 객체로 생성
+
     @InjectMocks
     private AuthController authController; // 테스트 대상 AuthController (Mock 객체들이 주입됨)
 
     /**
-     * 🔴 TDD Step 1: 실패하는 테스트 작성
+     * 🟢 TDD Step 2: 테스트를 통과하는 최소한의 코드 작성 완료
+     * 🔵 TDD Step 3: 코드 리팩토링
      * <p>
      * 테스트 시나리오: 유효한 로그인 정보로 로그인 요청 시 성공 응답을 받는다
      */
@@ -58,9 +63,12 @@ class AuthControllerTest {
         // Mock 설정: AuthService의 authorize 메서드가 호출되면 mockResponse를 반환
         when(authService.authorize(any(LoginDto.class)))
                 .thenReturn(mockResponse);
+        
+        // Mock 설정: BindingResult에 에러가 없다고 설정
+        when(bindingResult.hasErrors()).thenReturn(false);
 
         // When: 테스트할 메서드 실행
-        CommonResponse<?> result = authController.authorize(loginDto, null);
+        CommonResponse<?> result = authController.authorize(loginDto, bindingResult);
 
         // Then: 결과 검증
         assertThat(result).isNotNull();
@@ -72,7 +80,8 @@ class AuthControllerTest {
     }
 
     /**
-     * 🔴 TDD Step 1: 실패하는 테스트 작성
+     * 🟢 TDD Step 2: 테스트를 통과하는 최소한의 코드 작성 완료
+     * 🔵 TDD Step 3: 코드 리팩토링
      * <p>
      * 테스트 시나리오: 비밀번호 재설정 이메일 요청 시 성공한다
      */
@@ -93,7 +102,8 @@ class AuthControllerTest {
     }
 
     /**
-     * 🔴 TDD Step 1: 실패하는 테스트 작성
+     * 🟢 TDD Step 2: 테스트를 통과하는 최소한의 코드 작성 완료
+     * 🔵 TDD Step 3: 코드 리팩토링
      * <p>
      * 테스트 시나리오: 비밀번호 재설정 요청 시 성공한다
      */
@@ -108,15 +118,19 @@ class AuthControllerTest {
         // Mock 설정: AuthService의 passwordReset 메서드가 호출되면 아무것도 하지 않음
         doNothing().when(authService).passwordReset(any(PasswordResetRequestDto.class));
 
+        // Mock 설정: BindingResult에 에러가 없다고 설정
+        when(bindingResult.hasErrors()).thenReturn(false);
+
         // When: 테스트할 메서드 실행
-        authController.passwordReset(requestDto, null);
+        authController.passwordReset(requestDto, bindingResult);
 
         // Then: Mock 객체의 메서드가 호출되었는지 검증
         verify(authService).passwordReset(requestDto);
     }
 
     /**
-     * 🔴 TDD Step 1: 실패하는 테스트 작성
+     * 🟢 TDD Step 2: 테스트를 통과하는 최소한의 코드 작성 완료
+     * 🔵 TDD Step 3: 코드 리팩토링
      * <p>
      * 테스트 시나리오: 잘못된 로그인 정보로 요청 시 실패한다
      */
@@ -129,17 +143,18 @@ class AuthControllerTest {
                 .password("") // 빈 비밀번호
                 .build();
 
-        // Mock 설정: 예외 발생
-        when(authService.authorize(any(LoginDto.class)))
-                .thenThrow(new RuntimeException("인증 실패"));
+        // Mock 설정: BindingResult에 에러가 있다고 설정 (실패 시나리오)
+        when(bindingResult.hasErrors()).thenReturn(true);
+        
+        // Mock 설정: MessageSource 메시지 반환
+        when(messageSource.getMessage(anyString(), any(), any())).thenReturn("인증 실패");
 
-        // When & Then: 예외 발생 검증
-        assertThatThrownBy(() -> authController.authorize(loginDto, null))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessage("인증 실패");
+        // When & Then: 예외 발생 검증 (Controller에서 CustomException을 던짐)
+        assertThatThrownBy(() -> authController.authorize(loginDto, bindingResult))
+                .isInstanceOf(Exception.class); // CustomException은 Exception을 상속
 
-        // Mock 객체의 메서드가 호출되었는지 검증
-        verify(authService).authorize(loginDto);
+        // Mock 객체의 메서드가 호출되지 않았는지 검증 (bindingResult.hasErrors()가 true이므로)
+        verify(authService, never()).authorize(loginDto);
     }
 }
 

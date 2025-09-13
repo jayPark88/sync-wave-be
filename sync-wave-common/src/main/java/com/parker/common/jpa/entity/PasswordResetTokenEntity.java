@@ -2,6 +2,7 @@ package com.parker.common.jpa.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -29,6 +30,7 @@ public class PasswordResetTokenEntity {
     private String token;
 
     @Column(nullable = false, columnDefinition = "DATETIME COMMENT '토큰 시작 시간'")
+    @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 
     @Column(nullable = false, columnDefinition = "DATETIME COMMENT '만료 시간'")
@@ -36,6 +38,7 @@ public class PasswordResetTokenEntity {
 
     @Column(nullable = false)
     @ColumnDefault("false")  // Hibernate에서 기본값 설정 (null 방지)
+    @Builder.Default
     private boolean used = false;
 
 }

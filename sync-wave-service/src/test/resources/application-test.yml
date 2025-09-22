@@ -1,0 +1,33 @@
+spring:
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        show_sql: true
+
+  h2:
+    console:
+      enabled: true
+
+logging:
+  level:
+    com.parker: debug
+    org.springframework.security: debug
+
+jwt:
+  secret: dGV4dC1ibGFoLXRleHQtYmxhaC10ZXh0LWJsYWgtdGV4dC1ibGFoLXRleHQtYmxhaC10ZXh0LWJsYWgtdGV4dC1ibGFoLXRleHQtYmxhaC10ZXh0LWJsYWgK
+  token-validity-in-seconds: 86400 
+
+password:
+  reset:
+    uri: http://localhost:8080/reset-password 

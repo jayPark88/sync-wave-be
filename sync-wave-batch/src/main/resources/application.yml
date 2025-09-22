@@ -1,0 +1,20 @@
+spring:
+  profiles:
+    active: local
+    include: core
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: jaypark8282@gmail.com
+    password: jrud ebim rfru lrdl
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+server:
+  servlet:
+    session:
+      tracking-modes: cookie #이렇게 하면 url에 jessionId가 노출이 안된다, 예전에 url에 노출되서 난리난적이..
+  error:
+    include-binding-errors: always
+    include-message: always
+  shutdown: graceful

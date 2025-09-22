@@ -1,0 +1,44 @@
+server:
+  port: 8080
+
+spring:
+  messages:
+    basename: messages,config.i18n.messages
+
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/syncwave?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: parker
+    password: loist@1234
+
+  jpa:
+    database-platform: org.hibernate.dialect.MySQL8Dialect #mysql8버전 Dialect사용
+    open-in-view: false #  Spring Boot 애플리케이션에서 데이터베이스 연결과 트랜잭션 처리에 대한 관리 방식을 제어하는 설정 옵션 중 하나입니다.(true하면 계속 DB연결 상태가 된다.)
+    show-sql: true #쿼리 로그 여부
+    hibernate:
+      format_sql: true # Hibernate가 출력하는 로그포맷을 보기 쉽게 할 것인지 옵션
+      ddl-auto: update #ddl생성 옵션
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl # Hibernate 엔티티 및 테이블 이름의 네이밍 전략을 구성하는 설정입니다
+    properties:
+      hibernate:
+        format_sql: true
+        show_sql: true
+
+logging:
+  level:
+    com.parker: debug # ERROR>WARN>INFO>DEBUG>TRACE 순서로 예를들어 INFO로 설정하면 WARN, ERROR까지 출력됨
+
+file:
+  upload-path: sync-wave-service/src/main/resources/images
+
+jwt:
+  header: Authorization
+  #HS512 알고리즘을 사용할 것이기 때문에 512bit, 즉 64byte 이상의 secret key를 사용해야 한다.
+  #echo 'text-blah-text-blah-text-blah-text-blah-text-blah-text-blah-text-blah-text-blah-text-blah'|base64
+  secret: dGV4dC1ibGFoLXRleHQtYmxhaC10ZXh0LWJsYWgtdGV4dC1ibGFoLXRleHQtYmxhaC10ZXh0LWJsYWgtdGV4dC1ibGFoLXRleHQtYmxhaC10ZXh0LWJsYWgK
+  token-validity-in-seconds: 86400 #24시간을 의미
+
+password:
+  reset:
+    uri: http://localhost:8080/service/v1/auth/redirect/password-reset/redirect?token=

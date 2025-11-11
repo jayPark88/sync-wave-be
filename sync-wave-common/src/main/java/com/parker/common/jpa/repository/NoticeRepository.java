@@ -165,4 +165,5 @@ public interface NoticeRepository extends JpaRepository<NoticeEntity, Long> {
      */
     @Query("SELECT n FROM NoticeEntity n WHERE n.title LIKE %:keyword% OR n.content LIKE %:keyword%")
     Page<NoticeEntity> findByTitleOrContentContaining(@Param("keyword") String keyword, Pageable pageable);
+    
 } 

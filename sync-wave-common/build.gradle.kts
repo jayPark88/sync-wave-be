@@ -6,6 +6,27 @@ tasks.jar {
     enabled = true
 }
 
+// QueryDSL Q클래스 생성 경로 설정
+tasks.withType<JavaCompile> {
+    options.generatedSourceOutputDirectory.set(file("${projectDir}/src/main/generated"))
+}
+
+// Q클래스 생성 경로를 소스 디렉토리로 추가
+sourceSets {
+    main {
+        java {
+            srcDirs("src/main/java", "src/main/generated")
+        }
+    }
+}
+
+// clean 태스크 실행 시 generated 디렉토리 삭제
+tasks.named("clean") {
+    doLast {
+        file("${projectDir}/src/main/generated").deleteRecursively()
+    }
+}
+
 dependencies {
     //spring
     //api로 선언된 의존성은 컴파일 시 클래스 경로에 포함되며, 다른 모듈에서 사용 가능합니다.
@@ -33,4 +54,10 @@ dependencies {
     api(group = "com.fasterxml.jackson.core", name = "jackson-databind", version = "2.15.3")
     api(group = "com.fasterxml.jackson.core", name = "jackson-core", version = "2.15.3")
     api(group = "com.fasterxml.jackson.core", name = "jackson-annotations", version = "2.15.3")
+    
+    // QueryDSL
+    api("com.querydsl:querydsl-jpa:5.0.0:jakarta")
+    annotationProcessor("com.querydsl:querydsl-apt:5.0.0:jakarta")
+    annotationProcessor("jakarta.annotation:jakarta.annotation-api")
+    annotationProcessor("jakarta.persistence:jakarta.persistence-api")
 }

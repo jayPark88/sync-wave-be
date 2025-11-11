@@ -14,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.util.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -73,35 +74,53 @@ public class NoticeService {
 
     /**
      * 공지사항 목록 조회 (모든 사용자 가능) - 페이징 지원
-     * @param searchDto 검색 조건
+     * @param searchDto 검색 조건 (null 가능)
      * @return 페이징된 공지사항 목록
      */
     public Page<NoticeEntity> getNoticeList(NoticeSearchDto searchDto) {
-        log.info("공지사항 목록 조회 요청 - searchDto: {}", searchDto);
-        
-        // 페이징 정보 설정
-        int page = (searchDto != null && searchDto.getPage() != null) ? searchDto.getPage() : 0;
-        int size = (searchDto != null && searchDto.getSize() != null) ? searchDto.getSize() : 10;
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDateTime"));
-        
-        log.info("페이징 정보 - page: {}, size: {}", page, size);
-        
         // null 체크 및 기본값 설정
         if (searchDto == null) {
             searchDto = new NoticeSearchDto();
         }
         
-        log.info("검색 조건 - isActive: {}, keyword: {}, title: {}, content: {}, priority: {}", 
-                searchDto.getIsActive(), searchDto.getKeyword(), searchDto.getTitle(), 
-                searchDto.getContent(), searchDto.getPriority());
+        // 페이징 정보 생성
+        Pageable pageable = createPageable(searchDto);
+        
+        log.info("공지사항 목록 조회 요청 - page: {}, size: {}, 검색조건: {}", 
+                pageable.getPageNumber(), pageable.getPageSize(), 
+                hasSearchConditions(searchDto) ? "있음" : "없음");
 
         // Custom Repository의 QueryDSL 메서드 호출 (검색 조건이 없어도 빈 BooleanBuilder로 전체 조회)
         Page<NoticeEntity> result = noticeRepositoryCustom.searchNotices(searchDto, pageable);
         
-        log.info("검색 결과 - 총 개수: {}, 현재 페이지 크기: {}, 총 페이지: {}", 
+        log.info("공지사항 목록 조회 완료 - 총 개수: {}, 현재 페이지 크기: {}, 총 페이지: {}", 
                 result.getTotalElements(), result.getNumberOfElements(), result.getTotalPages());
         
         return result;
+    }
+    
+    /**
+     * 페이징 정보 생성
+     * @param searchDto 검색 조건 DTO
+     * @return Pageable 객체
+     */
+    private Pageable createPageable(NoticeSearchDto searchDto) {
+        int page = (searchDto.getPage() != null) ? searchDto.getPage() : 0;
+        int size = (searchDto.getSize() != null) ? searchDto.getSize() : 10;
+        return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDateTime"));
+    }
+    
+    /**
+     * 검색 조건이 있는지 확인
+     * @param searchDto 검색 조건 DTO
+     * @return 검색 조건이 있으면 true
+     */
+    private boolean hasSearchConditions(NoticeSearchDto searchDto) {
+        return searchDto.getIsActive() != null
+                || StringUtils.hasText(searchDto.getKeyword())
+                || StringUtils.hasText(searchDto.getTitle())
+                || StringUtils.hasText(searchDto.getContent())
+                || StringUtils.hasText(searchDto.getPriority());
     }
 
     /**

@@ -27,7 +27,7 @@ import static com.parker.common.exception.enums.ResponseErrorCode.FAIL_500;
  * ㄴ NoticeService
  *
  * <pre>
- * description : 공지사항 서비스
+ * description : 공지사항 CRUD 서비스
  * </pre>
  *
  * <pre>

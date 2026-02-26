@@ -6,6 +6,7 @@ import com.parker.common.jpa.repository.NoticeRepository;
 import com.parker.common.util.security.SecurityUtil;
 import com.parker.service.api.v1.notice.dto.NoticeDto;
 import com.parker.service.api.v1.notice.dto.NoticeSearchDto;
+import com.parker.service.api.v1.notice.repository.NoticeRepositoryCustom;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
@@ -13,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.util.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,7 +27,7 @@ import static com.parker.common.exception.enums.ResponseErrorCode.FAIL_500;
  * ㄴ NoticeService
  *
  * <pre>
- * description : 공지사항 서비스
+ * description : 공지사항 CRUD 서비스.
  * </pre>
  *
  * <pre>
@@ -42,6 +44,7 @@ import static com.parker.common.exception.enums.ResponseErrorCode.FAIL_500;
 public class NoticeService {
 
     private final NoticeRepository noticeRepository;
+    private final NoticeRepositoryCustom noticeRepositoryCustom;
     private final MessageSource messageSource;
 
     /**
@@ -71,64 +74,53 @@ public class NoticeService {
 
     /**
      * 공지사항 목록 조회 (모든 사용자 가능) - 페이징 지원
-     * @param searchDto 검색 조건
+     * @param searchDto 검색 조건 (null 가능)
      * @return 페이징된 공지사항 목록
      */
     public Page<NoticeEntity> getNoticeList(NoticeSearchDto searchDto) {
-        log.info("공지사항 목록 조회 요청 - searchDto: {}", searchDto);
-        
-        // 페이징 정보 설정
-        int page = searchDto.getPage() != null ? searchDto.getPage() : 0;
-        int size = searchDto.getSize() != null ? searchDto.getSize() : 10;
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDateTime"));
-        
-        log.info("페이징 정보 - page: {}, size: {}", page, size);
-        
+        // null 체크 및 기본값 설정
         if (searchDto == null) {
-            // 검색 조건이 없으면 모든 공지사항 조회
-            log.info("검색 조건이 없어 모든 공지사항 조회");
-            return noticeRepository.findAll(pageable);
+            searchDto = new NoticeSearchDto();
         }
+        
+        // 페이징 정보 생성
+        Pageable pageable = createPageable(searchDto);
+        
+        log.info("공지사항 목록 조회 요청 - page: {}, size: {}, 검색조건: {}", 
+                pageable.getPageNumber(), pageable.getPageSize(), 
+                hasSearchConditions(searchDto) ? "있음" : "없음");
 
-        // isActive 필터링이 명시적으로 지정된 경우 (true/false)
-        log.info("isActive 필터링: {}", searchDto.getIsActive());
-        if (searchDto.getIsActive() != null) {
-            // 활성화 상태만으로 필터링 (다른 조건들은 클라이언트에서 처리)
-            Page<NoticeEntity> result = noticeRepository.findByIsActive(searchDto.getIsActive(), pageable);
-            log.info("활성화 상태 필터링 결과 - 총 개수: {}, 현재 페이지 크기: {}, 총 페이지: {}", 
-                    result.getTotalElements(), result.getNumberOfElements(), result.getTotalPages());
-            return result;
-        }
-
-        // isActive가 null인 경우 (모든 상태 조회) 또는 isActive 필터링이 지정되지 않은 경우
-        log.info("모든 상태 조회 또는 필터링 미지정");
-        if (searchDto.getKeyword() != null && !searchDto.getKeyword().trim().isEmpty()) {
-            return noticeRepository.findByTitleOrContentContaining(searchDto.getKeyword().trim(), pageable);
-        }
-
-        if (searchDto.getTitle() != null && !searchDto.getTitle().trim().isEmpty()) {
-            return noticeRepository.findByTitleContaining(searchDto.getTitle().trim(), pageable);
-        }
-
-        if (searchDto.getContent() != null && !searchDto.getContent().trim().isEmpty()) {
-            return noticeRepository.findByContentContaining(searchDto.getContent().trim(), pageable);
-        }
-
-        if (searchDto.getPriority() != null && !searchDto.getPriority().trim().isEmpty()) {
-            return noticeRepository.findByPriority(searchDto.getPriority().trim(), pageable);
-        }
-
-        // 기본적으로 모든 공지사항 조회
-        Page<NoticeEntity> result = noticeRepository.findAll(pageable);
-        log.info("전체 공지사항 조회 결과 - 총 개수: {}, 현재 페이지 크기: {}, 총 페이지: {}", 
+        // Custom Repository의 QueryDSL 메서드 호출 (검색 조건이 없어도 빈 BooleanBuilder로 전체 조회)
+        Page<NoticeEntity> result = noticeRepositoryCustom.searchNotices(searchDto, pageable);
+        
+        log.info("공지사항 목록 조회 완료 - 총 개수: {}, 현재 페이지 크기: {}, 총 페이지: {}", 
                 result.getTotalElements(), result.getNumberOfElements(), result.getTotalPages());
         
-        // 전체 개수와 활성화된 개수 비교
-        long totalCount = noticeRepository.count();
-        long activeCount = noticeRepository.countByIsActiveTrue();
-        log.info("전체 공지사항 개수: {}, 활성화된 공지사항 개수: {}", totalCount, activeCount);
-        
         return result;
+    }
+    
+    /**
+     * 페이징 정보 생성
+     * @param searchDto 검색 조건 DTO
+     * @return Pageable 객체
+     */
+    private Pageable createPageable(NoticeSearchDto searchDto) {
+        int page = (searchDto.getPage() != null) ? searchDto.getPage() : 0;
+        int size = (searchDto.getSize() != null) ? searchDto.getSize() : 10;
+        return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDateTime"));
+    }
+    
+    /**
+     * 검색 조건이 있는지 확인
+     * @param searchDto 검색 조건 DTO
+     * @return 검색 조건이 있으면 true
+     */
+    private boolean hasSearchConditions(NoticeSearchDto searchDto) {
+        return searchDto.getIsActive() != null
+                || StringUtils.hasText(searchDto.getKeyword())
+                || StringUtils.hasText(searchDto.getTitle())
+                || StringUtils.hasText(searchDto.getContent())
+                || StringUtils.hasText(searchDto.getPriority());
     }
 
     /**

@@ -15,6 +15,8 @@ dependencies {
     implementation("mysql:mysql-connector-java:8.0.33")
     //swagger
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0")
+    // QueryDSL (런타임에 필요)
+    implementation("com.querydsl:querydsl-jpa:5.0.0:jakarta")
     testImplementation("com.h2database:h2")
 }
 

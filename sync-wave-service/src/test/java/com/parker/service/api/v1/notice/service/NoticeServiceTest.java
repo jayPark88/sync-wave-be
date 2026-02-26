@@ -6,6 +6,7 @@ import com.parker.common.jpa.repository.NoticeRepository;
 import com.parker.common.util.security.SecurityUtil;
 import com.parker.service.api.v1.notice.dto.NoticeDto;
 import com.parker.service.api.v1.notice.dto.NoticeSearchDto;
+import com.parker.service.api.v1.notice.repository.NoticeRepositoryCustom;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,6 +48,9 @@ class NoticeServiceTest {
 
     @Mock
     private MessageSource messageSource; // MessageSource를 Mock 객체로 생성
+
+    @Mock
+    private NoticeRepositoryCustom noticeRepositoryCustom; // NoticeRepositoryCustom을 Mock 객체로 생성
 
     @InjectMocks
     private NoticeService noticeService; // 테스트 대상 NoticeService (Mock 객체들이 주입됨)
@@ -133,11 +137,60 @@ class NoticeServiceTest {
      * 🟢 TDD Step 2: 테스트를 통과하는 최소한의 코드 작성 완료
      * 🔵 TDD Step 3: 코드 리팩토링
      * <p>
-     * 테스트 시나리오: 공지사항 목록 조회 요청 시 성공한다
+     * 테스트 시나리오: 검색 조건 없이 공지사항 목록 조회 요청 시 성공한다
      */
     @Test
-    @DisplayName("공지사항 목록 조회 성공 테스트")
-    void getNoticeList_유효한검색조건_성공() {
+    @DisplayName("공지사항 목록 조회 성공 테스트 - 검색 조건 없음")
+    void getNoticeList_검색조건없음_성공() {
+        // Given: 테스트 데이터 준비
+        NoticeSearchDto searchDto = new NoticeSearchDto();
+        searchDto.setPage(0);
+        searchDto.setSize(10);
+
+        NoticeEntity notice1 = NoticeEntity.builder()
+                .id(1L)
+                .title("공지사항 1")
+                .content("내용 1")
+                .priority("HIGH")
+                .isActive(true)
+                .build();
+
+        NoticeEntity notice2 = NoticeEntity.builder()
+                .id(2L)
+                .title("공지사항 2")
+                .content("내용 2")
+                .priority("MEDIUM")
+                .isActive(true)
+                .build();
+
+        List<NoticeEntity> noticeList = Arrays.asList(notice1, notice2);
+        Page<NoticeEntity> noticePage = new PageImpl<>(noticeList, PageRequest.of(0, 10), 2);
+
+        // Mock 설정: NoticeRepositoryCustom의 searchNotices 메서드가 호출되면 noticePage를 반환
+        when(noticeRepositoryCustom.searchNotices(eq(searchDto), any(Pageable.class))).thenReturn(noticePage);
+
+        // When: 테스트할 메서드 실행
+        Page<NoticeEntity> result = noticeService.getNoticeList(searchDto);
+
+        // Then: 결과 검증
+        assertThat(result).isNotNull();
+        assertThat(result.getContent()).hasSize(2);
+        assertThat(result.getContent().get(0).getTitle()).isEqualTo("공지사항 1");
+        assertThat(result.getContent().get(1).getTitle()).isEqualTo("공지사항 2");
+
+        // Mock 객체의 메서드가 호출되었는지 검증
+        verify(noticeRepositoryCustom).searchNotices(eq(searchDto), any(Pageable.class));
+    }
+
+    /**
+     * 🟢 TDD Step 2: 테스트를 통과하는 최소한의 코드 작성 완료
+     * 🔵 TDD Step 3: 코드 리팩토링
+     * <p>
+     * 테스트 시나리오: isActive 조건으로 공지사항 목록 조회 요청 시 성공한다
+     */
+    @Test
+    @DisplayName("공지사항 목록 조회 성공 테스트 - isActive 조건")
+    void getNoticeList_isActive조건_성공() {
         // Given: 테스트 데이터 준비
         NoticeSearchDto searchDto = new NoticeSearchDto();
         searchDto.setPage(0);
@@ -163,8 +216,8 @@ class NoticeServiceTest {
         List<NoticeEntity> noticeList = Arrays.asList(notice1, notice2);
         Page<NoticeEntity> noticePage = new PageImpl<>(noticeList, PageRequest.of(0, 10), 2);
 
-        // Mock 설정: NoticeRepository의 findByIsActive 메서드가 호출되면 noticePage를 반환
-        when(noticeRepository.findByIsActive(eq(true), any(Pageable.class))).thenReturn(noticePage);
+        // Mock 설정: NoticeRepositoryCustom의 searchNotices 메서드가 호출되면 noticePage를 반환
+        when(noticeRepositoryCustom.searchNotices(eq(searchDto), any(Pageable.class))).thenReturn(noticePage);
 
         // When: 테스트할 메서드 실행
         Page<NoticeEntity> result = noticeService.getNoticeList(searchDto);
@@ -172,11 +225,12 @@ class NoticeServiceTest {
         // Then: 결과 검증
         assertThat(result).isNotNull();
         assertThat(result.getContent()).hasSize(2);
+        assertThat(result.getTotalElements()).isEqualTo(2L);
         assertThat(result.getContent().get(0).getTitle()).isEqualTo("공지사항 1");
         assertThat(result.getContent().get(1).getTitle()).isEqualTo("공지사항 2");
 
         // Mock 객체의 메서드가 호출되었는지 검증
-        verify(noticeRepository).findByIsActive(eq(true), any(Pageable.class));
+        verify(noticeRepositoryCustom).searchNotices(eq(searchDto), any(Pageable.class));
     }
 
     /**
@@ -205,8 +259,8 @@ class NoticeServiceTest {
         List<NoticeEntity> noticeList = Arrays.asList(notice);
         Page<NoticeEntity> noticePage = new PageImpl<>(noticeList, PageRequest.of(0, 10), 1);
 
-        // Mock 설정: NoticeRepository의 findByTitleOrContentContaining 메서드가 호출되면 noticePage를 반환
-        when(noticeRepository.findByTitleOrContentContaining(eq("테스트"), any(Pageable.class))).thenReturn(noticePage);
+        // Mock 설정: NoticeRepositoryCustom의 searchNotices 메서드가 호출되면 noticePage를 반환
+        when(noticeRepositoryCustom.searchNotices(eq(searchDto), any(Pageable.class))).thenReturn(noticePage);
 
         // When: 테스트할 메서드 실행
         Page<NoticeEntity> result = noticeService.getNoticeList(searchDto);
@@ -214,10 +268,57 @@ class NoticeServiceTest {
         // Then: 결과 검증
         assertThat(result).isNotNull();
         assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getTotalElements()).isEqualTo(1L);
         assertThat(result.getContent().get(0).getTitle()).isEqualTo("테스트 공지사항");
 
         // Mock 객체의 메서드가 호출되었는지 검증
-        verify(noticeRepository).findByTitleOrContentContaining(eq("테스트"), any(Pageable.class));
+        verify(noticeRepositoryCustom).searchNotices(eq(searchDto), any(Pageable.class));
+    }
+
+    /**
+     * 🟢 TDD Step 2: 테스트를 통과하는 최소한의 코드 작성 완료
+     * 🔵 TDD Step 3: 코드 리팩토링
+     * <p>
+     * 테스트 시나리오: 여러 검색 조건을 조합하여 공지사항 목록 조회 요청 시 성공한다
+     */
+    @Test
+    @DisplayName("공지사항 목록 조회 성공 테스트 - 여러 조건 조합")
+    void getNoticeList_여러조건조합_성공() {
+        // Given: 테스트 데이터 준비
+        NoticeSearchDto searchDto = new NoticeSearchDto();
+        searchDto.setPage(0);
+        searchDto.setSize(10);
+        searchDto.setIsActive(true);
+        searchDto.setKeyword("공지");
+        searchDto.setPriority("HIGH");
+
+        NoticeEntity notice = NoticeEntity.builder()
+                .id(1L)
+                .title("공지사항 제목")
+                .content("공지사항 내용")
+                .priority("HIGH")
+                .isActive(true)
+                .build();
+
+        List<NoticeEntity> noticeList = Arrays.asList(notice);
+        Page<NoticeEntity> noticePage = new PageImpl<>(noticeList, PageRequest.of(0, 10), 1);
+
+        // Mock 설정: NoticeRepositoryCustom의 searchNotices 메서드가 호출되면 noticePage를 반환
+        when(noticeRepositoryCustom.searchNotices(eq(searchDto), any(Pageable.class))).thenReturn(noticePage);
+
+        // When: 테스트할 메서드 실행
+        Page<NoticeEntity> result = noticeService.getNoticeList(searchDto);
+
+        // Then: 결과 검증
+        assertThat(result).isNotNull();
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getTotalElements()).isEqualTo(1L);
+        assertThat(result.getContent().get(0).getTitle()).isEqualTo("공지사항 제목");
+        assertThat(result.getContent().get(0).getPriority()).isEqualTo("HIGH");
+        assertThat(result.getContent().get(0).getIsActive()).isTrue();
+
+        // Mock 객체의 메서드가 호출되었는지 검증
+        verify(noticeRepositoryCustom).searchNotices(eq(searchDto), any(Pageable.class));
     }
 
     /**

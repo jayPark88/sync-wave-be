@@ -67,6 +67,9 @@ public class WebSecurityConfig {
                 .authorizeHttpRequests(
                         authorize -> authorize
                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // OPTIONS 요청 허용
+                                .requestMatchers(new MvcRequestMatcher(introspector, "/swagger-ui.html")).permitAll() // Swagger UI 페이지
+                                .requestMatchers(new MvcRequestMatcher(introspector, "/swagger-ui/**")).permitAll() // Swagger UI 정적 리소스
+                                .requestMatchers(new MvcRequestMatcher(introspector, "/api-docs/**")).permitAll() // OpenAPI JSON 문서
                                 .requestMatchers(new MvcRequestMatcher(introspector, "/v1/auth/**")).permitAll()
                                 .requestMatchers(new MvcRequestMatcher(introspector, "/v1/user/signUp")).permitAll()
                                 .requestMatchers(new MvcRequestMatcher(introspector, "/v1/notices")).permitAll() // 공지사항 조회는 모든 사용자 허용

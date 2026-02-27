@@ -62,7 +62,7 @@ public class AuthServiceTest {
     void 로그인_성공_토큰반환() {
         // given - 테스트 데이터 준비
         LoginDto loginDto = LoginDto.builder()
-                .userId("parker@test.com")
+                .email("parker@test.com")
                 .password("password123")
                 .build();
         
@@ -157,7 +157,8 @@ public class AuthServiceTest {
         PasswordResetRequestDto requestDto = new PasswordResetRequestDto();
         requestDto.setToken(token);
         requestDto.setPassword(newPassword);
-        
+        requestDto.setConfirmPassword(newPassword);
+
         PasswordResetTokenEntity resetToken = PasswordResetTokenEntity.builder()
                 .email(email)
                 .used(false)
@@ -200,7 +201,8 @@ public class AuthServiceTest {
         PasswordResetRequestDto requestDto = new PasswordResetRequestDto();
         requestDto.setToken(invalidToken);
         requestDto.setPassword("newPassword123");
-        
+        requestDto.setConfirmPassword("newPassword123");
+
         // Mock 설정
         when(passwordResetTokenRepository.findByToken(invalidToken)).thenReturn(Optional.empty());
         when(messageSource.getMessage(anyString(), any(), any())).thenReturn("토큰이 만료되었습니다");
@@ -223,7 +225,8 @@ public class AuthServiceTest {
         PasswordResetRequestDto requestDto = new PasswordResetRequestDto();
         requestDto.setToken(token);
         requestDto.setPassword("newPassword123");
-        
+        requestDto.setConfirmPassword("newPassword123");
+
         PasswordResetTokenEntity resetToken = PasswordResetTokenEntity.builder()
                 .email(email)
                 .used(false)

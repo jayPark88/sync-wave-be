@@ -20,6 +20,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.Locale;
 
+import static com.parker.common.exception.enums.ResponseErrorCode.FAIL_401;
+import static com.parker.common.exception.enums.ResponseErrorCode.FAIL_403;
+import static com.parker.common.exception.enums.ResponseErrorCode.FAIL_404;
 import static com.parker.common.exception.enums.ResponseErrorCode.FAIL_500;
 
 /**
@@ -58,8 +61,8 @@ public class NoticeService {
         checkMasterPermission();
         
         String currentUser = SecurityUtil.getCurrentUserName()
-                .orElseThrow(() -> new CustomException(FAIL_500.code(), 
-                    "사용자 정보를 찾을 수 없습니다.", HttpStatus.INTERNAL_SERVER_ERROR));
+                .orElseThrow(() -> new CustomException(FAIL_401.code(),
+                    "사용자 정보를 찾을 수 없습니다.", HttpStatus.UNAUTHORIZED));
 
         NoticeEntity noticeEntity = NoticeEntity.builder()
                 .title(noticeDto.getTitle())
@@ -130,9 +133,9 @@ public class NoticeService {
      */
     public NoticeEntity getNoticeDetail(Long noticeId) {
         return noticeRepository.findById(noticeId)
-                .orElseThrow(() -> new CustomException(FAIL_500.code(), 
-                    messageSource.getMessage("notice.not.found", null, Locale.getDefault()), 
-                    HttpStatus.INTERNAL_SERVER_ERROR));
+                .orElseThrow(() -> new CustomException(FAIL_404.code(),
+                    messageSource.getMessage("notice.not.found", null, Locale.getDefault()),
+                    HttpStatus.NOT_FOUND));
     }
     
     /**
@@ -142,13 +145,13 @@ public class NoticeService {
      */
     public NoticeEntity getNoticeDetailForUser(Long noticeId) {
         NoticeEntity notice = noticeRepository.findById(noticeId)
-                .orElseThrow(() -> new CustomException(FAIL_500.code(), 
-                    messageSource.getMessage("notice.not.found", null, Locale.getDefault()), 
-                    HttpStatus.INTERNAL_SERVER_ERROR));
-        
+                .orElseThrow(() -> new CustomException(FAIL_404.code(),
+                    messageSource.getMessage("notice.not.found", null, Locale.getDefault()),
+                    HttpStatus.NOT_FOUND));
+
         // ROLE_USER는 활성화된 공지사항만 조회 가능
         if (!isMasterUser() && !notice.getIsActive()) {
-            throw new CustomException(FAIL_500.code(), 
+            throw new CustomException(FAIL_403.code(),
                 "비활성화된 공지사항은 조회할 수 없습니다.", HttpStatus.FORBIDDEN);
         }
         
@@ -167,9 +170,9 @@ public class NoticeService {
         checkMasterPermission();
 
         NoticeEntity noticeEntity = noticeRepository.findById(noticeId)
-                .orElseThrow(() -> new CustomException(FAIL_500.code(), 
-                    messageSource.getMessage("notice.not.found", null, Locale.getDefault()), 
-                    HttpStatus.INTERNAL_SERVER_ERROR));
+                .orElseThrow(() -> new CustomException(FAIL_404.code(),
+                    messageSource.getMessage("notice.not.found", null, Locale.getDefault()),
+                    HttpStatus.NOT_FOUND));
 
         noticeEntity.setTitle(noticeDto.getTitle());
         noticeEntity.setContent(noticeDto.getContent());
@@ -190,9 +193,9 @@ public class NoticeService {
         checkMasterPermission();
 
         NoticeEntity noticeEntity = noticeRepository.findById(noticeId)
-                .orElseThrow(() -> new CustomException(FAIL_500.code(), 
-                    messageSource.getMessage("notice.not.found", null, Locale.getDefault()), 
-                    HttpStatus.INTERNAL_SERVER_ERROR));
+                .orElseThrow(() -> new CustomException(FAIL_404.code(),
+                    messageSource.getMessage("notice.not.found", null, Locale.getDefault()),
+                    HttpStatus.NOT_FOUND));
 
         noticeEntity.setIsActive(isActive);
 
@@ -209,9 +212,9 @@ public class NoticeService {
         checkMasterPermission();
 
         NoticeEntity noticeEntity = noticeRepository.findById(noticeId)
-                .orElseThrow(() -> new CustomException(FAIL_500.code(), 
-                    messageSource.getMessage("notice.not.found", null, Locale.getDefault()), 
-                    HttpStatus.INTERNAL_SERVER_ERROR));
+                .orElseThrow(() -> new CustomException(FAIL_404.code(),
+                    messageSource.getMessage("notice.not.found", null, Locale.getDefault()),
+                    HttpStatus.NOT_FOUND));
 
         noticeRepository.delete(noticeEntity);
     }
@@ -222,11 +225,11 @@ public class NoticeService {
      */
     private void checkMasterPermission() {
         String currentUserRole = SecurityUtil.getCurrentUserRole()
-                .orElseThrow(() -> new CustomException(FAIL_500.code(), 
-                    "사용자 권한 정보를 찾을 수 없습니다.", HttpStatus.INTERNAL_SERVER_ERROR));
+                .orElseThrow(() -> new CustomException(FAIL_401.code(),
+                    "사용자 권한 정보를 찾을 수 없습니다.", HttpStatus.UNAUTHORIZED));
 
         if (!"ROLE_MASTER".equals(currentUserRole)) {
-            throw new CustomException(FAIL_500.code(), 
+            throw new CustomException(FAIL_403.code(),
                 "공지사항 관리 권한이 없습니다.", HttpStatus.FORBIDDEN);
         }
     }

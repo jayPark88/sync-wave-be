@@ -53,7 +53,7 @@ class AuthControllerTest {
     void login_유효한사용자_성공응답반환() {
         // Given: 테스트 데이터 준비
         LoginDto loginDto = LoginDto.builder()
-                .userId("test@email.com")
+                .email("test@email.com")
                 .password("password123")
                 .build();
 
@@ -139,7 +139,7 @@ class AuthControllerTest {
     void login_잘못된사용자정보_실패응답반환() {
         // Given: 잘못된 테스트 데이터 준비
         LoginDto loginDto = LoginDto.builder()
-                .userId("") // 빈 사용자 ID
+                .email("") // 빈 이메일
                 .password("") // 빈 비밀번호
                 .build();
 

@@ -9,7 +9,8 @@ import java.util.Optional;
 public interface TodosRepository extends JpaRepository<TodosEntity, Long> {
     Optional<TodosEntity> findByTask(String task);
     List<TodosEntity> findByUserId(Long userId);
-    
+    List<TodosEntity> findByStatus(String status);
+
     // 최신순 조회를 위한 메서드
     List<TodosEntity> findByUserIdOrderByCreatedDateTimeDesc(Long userId);
 }

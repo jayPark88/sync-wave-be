@@ -26,6 +26,9 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Locale;
 
+import static com.parker.common.exception.enums.ResponseErrorCode.FAIL_400;
+import static com.parker.common.exception.enums.ResponseErrorCode.FAIL_401;
+import static com.parker.common.exception.enums.ResponseErrorCode.FAIL_404;
 import static com.parker.common.exception.enums.ResponseErrorCode.FAIL_500;
 
 /**
@@ -60,7 +63,7 @@ public class AuthService {
     public CommonResponse<TokenDto> authorize(LoginDto loginDto) {
         // UsernamePasswordAuthenticationToken는 주로 사용자가 제공한 사용자명(username)과 비밀번호(password)를 저장하며, 이 정보를 기반으로 사용자를 인증하는 데 활용됩니다.
         UsernamePasswordAuthenticationToken authenticationToken =
-                new UsernamePasswordAuthenticationToken(loginDto.getUserId(), loginDto.getPassword());
+                new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword());
 
         // authenticationToken을 이용해서 Authentication 객체를 생성하려고 authenticate 메서드가 실행이 될때 loadUserByUserName 메서드가 실행됩니다.(customUserDetail에서 오버라이드해서 그 비즈니스가 실행 됨)
         Authentication authentication = authenticationManagerBuilder.getObject().authenticate(authenticationToken);
@@ -81,7 +84,7 @@ public class AuthService {
      */
     public void passwordResetEmailRequest(String email) {
         // 실제 사용자 검증
-        userRepository.findByEmail(email).orElseThrow(() -> new CustomException(FAIL_500.code(), messageSource.getMessage("user.not.found", null, Locale.getDefault()), HttpStatus.INTERNAL_SERVER_ERROR));
+        userRepository.findByEmail(email).orElseThrow(() -> new CustomException(FAIL_404.code(), messageSource.getMessage("user.not.found", null, Locale.getDefault()), HttpStatus.NOT_FOUND));
 
         // 중복 체크 후 있을 경우 사용 처리
         List<PasswordResetTokenEntity> passwordResetTokenEntityList = passwordResetTokenRepository.findByEmail(email);
@@ -99,15 +102,20 @@ public class AuthService {
      * @param passwordResetRequestDto
      */
     public void passwordReset(PasswordResetRequestDto passwordResetRequestDto){
+        // 비밀번호 확인 검증
+        if (!passwordResetRequestDto.getPassword().equals(passwordResetRequestDto.getConfirmPassword())) {
+            throw new CustomException(FAIL_400.code(), "비밀번호와 비밀번호 확인이 일치하지 않습니다.", HttpStatus.BAD_REQUEST);
+        }
+
         // 토큰 검증
         PasswordResetTokenEntity passwordResetTokenEntity =
         passwordResetTokenRepository.findByToken(passwordResetRequestDto.getToken()).filter(item -> item.isUsed()==false)
-                .orElseThrow(() -> new CustomException(FAIL_500.code(),
+                .orElseThrow(() -> new CustomException(FAIL_401.code(),
                         messageSource.getMessage("token.expire", null, Locale.getDefault()),
-                        HttpStatus.INTERNAL_SERVER_ERROR));
+                        HttpStatus.UNAUTHORIZED));
 
         // 실제 사용자 검증
-        UserEntity userEntity = userRepository.findByEmail(passwordResetTokenEntity.getEmail()).orElseThrow(() -> new CustomException(FAIL_500.code(), messageSource.getMessage("user.not.found", null, Locale.getDefault()), HttpStatus.INTERNAL_SERVER_ERROR));
+        UserEntity userEntity = userRepository.findByEmail(passwordResetTokenEntity.getEmail()).orElseThrow(() -> new CustomException(FAIL_404.code(), messageSource.getMessage("user.not.found", null, Locale.getDefault()), HttpStatus.NOT_FOUND));
 
         // 패스워드 초기화 설정
         userEntity.setPassword(passwordEncoder.encode(passwordResetRequestDto.getPassword()));

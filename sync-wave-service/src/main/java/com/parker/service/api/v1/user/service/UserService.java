@@ -27,6 +27,9 @@ import java.util.Locale;
 import java.util.Optional;
 
 import static com.parker.common.exception.enums.ResponseErrorCode.FAIL_2000;
+import static com.parker.common.exception.enums.ResponseErrorCode.FAIL_401;
+import static com.parker.common.exception.enums.ResponseErrorCode.FAIL_403;
+import static com.parker.common.exception.enums.ResponseErrorCode.FAIL_404;
 import static com.parker.common.exception.enums.ResponseErrorCode.FAIL_500;
 
 
@@ -58,7 +61,7 @@ public class UserService {
     @Transactional
     public UserEntity signUp(UserDto userDto) {
         if (userRepository.findByEmail(userDto.getEmail()).isPresent()) {
-            throw new CustomException(FAIL_2000.code(), messageSource.getMessage("error.2000", new String[]{userDto.getUserName()}, Locale.getDefault()), HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new CustomException(FAIL_2000.code(), messageSource.getMessage("error.2000", new String[]{userDto.getUserName()}, Locale.getDefault()), HttpStatus.CONFLICT);
         }
 
         UserEntity userEntity = UserEntity.builder()
@@ -78,31 +81,52 @@ public class UserService {
     public UserEntity updateUser(UserUpdateRequestDto userUpdateRequestDto) {
         String userId = getTokenDecodeUserId(userUpdateRequestDto.getToken());
         if (!checkUserCheck(userId)) {
-            throw new CustomException(FAIL_500.code(),
+            throw new CustomException(FAIL_403.code(),
                     messageSource.getMessage("user.un.auth", null, Locale.getDefault()),
-                    HttpStatus.INTERNAL_SERVER_ERROR);
+                    HttpStatus.FORBIDDEN);
         }
 
+        // 본인 또는 MASTER 모두 공통 필드(이름, 닉네임, 전화번호, 이메일) 수정 가능
         return userRepository.findByEmail(userId)
                 .map(existingUser -> {
-                    if (roleCheck(userId)) {
-                        updateCommonFields(existingUser, userUpdateRequestDto);
-                    }
+                    updateCommonFields(existingUser, userUpdateRequestDto);
                     updatePasswordIfPresent(existingUser, userUpdateRequestDto);
                     return existingUser;
                 })
-                .orElseThrow(() -> new CustomException(FAIL_500.code(),
+                .orElseThrow(() -> new CustomException(FAIL_404.code(),
                         messageSource.getMessage("user.not.found", null, Locale.getDefault()),
-                        HttpStatus.INTERNAL_SERVER_ERROR));
+                        HttpStatus.NOT_FOUND));
     }
 
     @Transactional
     public String deleteUserInfo(String userId) {
-        if (checkUserCheck(userId) && roleCheck(userId)) {
-            userRepository.deleteByEmail(userId);
+        String currentUser = SecurityUtil.getCurrentUserName()
+                .orElseThrow(() -> new CustomException(FAIL_401.code(),
+                        messageSource.getMessage("user.un.auth", null, Locale.getDefault()),
+                        HttpStatus.UNAUTHORIZED));
+
+        boolean isSelf = currentUser.equals(userId);
+        boolean isMaster = roleCheck();
+
+        if (!isSelf && !isMaster) {
+            throw new CustomException(FAIL_403.code(),
+                    messageSource.getMessage("user.un.auth", null, Locale.getDefault()),
+                    HttpStatus.FORBIDDEN);
+        }
+
+        UserEntity user = userRepository.findByEmail(userId)
+                .orElseThrow(() -> new CustomException(FAIL_404.code(),
+                        messageSource.getMessage("user.not.found", null, Locale.getDefault()),
+                        HttpStatus.NOT_FOUND));
+
+        if (isMaster && !isSelf) {
+            // MASTER가 다른 사용자 계정 삭제: hard delete
+            userRepository.delete(user);
             return userId + " deleted!";
         } else {
-            throw new CustomException(FAIL_500.code(), messageSource.getMessage("user.un.auth", null, Locale.getDefault()), HttpStatus.INTERNAL_SERVER_ERROR);
+            // 본인 탈퇴: WITHDRAWAL 상태 변경 (soft delete)
+            user.setStatus(UserStatus.WITHDRAWAL.code());
+            return userId + " withdrawn!";
         }
     }
 
@@ -112,7 +136,7 @@ public class UserService {
             Pageable pageable = PageRequest.of(page, size);
             return userRepository.findAll(pageable);
         } else {
-            throw new CustomException(FAIL_500.code(), messageSource.getMessage("user.un.auth", null, Locale.getDefault()), HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new CustomException(FAIL_403.code(), messageSource.getMessage("user.un.auth", null, Locale.getDefault()), HttpStatus.FORBIDDEN);
         }
     }
 
@@ -121,7 +145,7 @@ public class UserService {
         if (checkUserCheck(userId)) {
             return userRepository.findByEmail(userId);
         } else {
-            throw new CustomException(FAIL_500.code(), messageSource.getMessage("user.un.auth", null, Locale.getDefault()), HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new CustomException(FAIL_403.code(), messageSource.getMessage("user.un.auth", null, Locale.getDefault()), HttpStatus.FORBIDDEN);
         }
     }
 
@@ -136,9 +160,9 @@ public class UserService {
 
         UserEntity user = userOpt.get();
         if (!checkUserCheck(user.getId().toString())) {
-            throw new CustomException(FAIL_500.code(),
+            throw new CustomException(FAIL_403.code(),
                     messageSource.getMessage("user.un.auth", null, Locale.getDefault()),
-                    HttpStatus.INTERNAL_SERVER_ERROR);
+                    HttpStatus.FORBIDDEN);
         }
 
         return userOpt;

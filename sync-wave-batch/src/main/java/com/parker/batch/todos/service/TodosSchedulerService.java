@@ -24,13 +24,8 @@ public class TodosSchedulerService {
     private final AlarmInterface alarmSlackImpl;
 
     public void alertUsersAboutTodosReminderTask() {
-        log.info("진행 중인 Todos 리스트 조회");
-        List<TodosEntity> todosEntityList = todosRepository.findByUserId(1L); // 임시로 userId 1로 설정
-
-        log.info("todosEntityList 중 PENDING 상태인 항목만 필터링");
-        List<TodosEntity> pendingList = todosEntityList.stream()
-                .filter(item -> item.getStatus().equals(TodoStatus.PENDING.code()))
-                .collect(Collectors.toList());
+        log.info("전체 사용자 PENDING 상태 Todos 조회");
+        List<TodosEntity> pendingList = todosRepository.findByStatus(TodoStatus.PENDING.code());
 
         log.info("사용자별로 그룹화하여 중복 제거");
         List<TodosEntity> removeDuplicateList = pendingList.stream()

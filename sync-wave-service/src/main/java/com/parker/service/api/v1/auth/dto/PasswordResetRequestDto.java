@@ -9,6 +9,11 @@ public class PasswordResetRequestDto {
     @NotNull(message = "{password.not.null}")
     @Size(min = 12, max = 255, message = "{password.size}")
     private String password;
+
+    @NotNull(message = "{password.not.null}")
+    @Size(min = 12, max = 255, message = "{password.size}")
+    private String confirmPassword;
+
     @NotNull(message = "{user.token.invalid}")
     private String token;
 }

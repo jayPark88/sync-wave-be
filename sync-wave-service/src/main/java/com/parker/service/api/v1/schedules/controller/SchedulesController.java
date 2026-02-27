@@ -1,6 +1,7 @@
 package com.parker.service.api.v1.schedules.controller;
 
 import com.parker.service.api.v1.schedules.dto.SchedulesDto;
+import com.parker.service.api.v1.schedules.dto.SchedulesUpdateDto;
 import com.parker.service.api.v1.schedules.dto.SearchSchedulesDto;
 import com.parker.common.exception.CustomException;
 import com.parker.common.jpa.entity.SchedulesEntity;
@@ -48,8 +49,8 @@ public class SchedulesController {
     }
 
     @PatchMapping("/{scheduleId}")
-    public CommonResponse<SchedulesEntity> modifyScheduleInfo(@PathVariable("scheduleId") Long scheduleId, @Valid @RequestBody SchedulesDto schedulesDto) {
-        return new CommonResponse<>(schedulesService.modifyScheduleInfo(scheduleId, schedulesDto));
+    public CommonResponse<SchedulesEntity> modifyScheduleInfo(@PathVariable("scheduleId") Long scheduleId, @RequestBody SchedulesUpdateDto schedulesUpdateDto) {
+        return new CommonResponse<>(schedulesService.modifyScheduleInfo(scheduleId, schedulesUpdateDto));
     }
 
 }

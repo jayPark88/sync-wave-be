@@ -1,6 +1,7 @@
 package com.parker.service.api.v1.schedules.service;
 
 import com.parker.service.api.v1.schedules.dto.SchedulesDto;
+import com.parker.service.api.v1.schedules.dto.SchedulesUpdateDto;
 import com.parker.service.api.v1.schedules.dto.SearchSchedulesDto;
 import com.parker.common.exception.CustomException;
 import com.parker.common.jpa.entity.SchedulesEntity;
@@ -12,7 +13,6 @@ import com.parker.service.api.v1.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +24,8 @@ import java.util.Locale;
 import java.util.Optional;
 
 import static com.parker.common.exception.enums.ResponseErrorCode.FAIL_400;
+import static com.parker.common.exception.enums.ResponseErrorCode.FAIL_403;
+import static com.parker.common.exception.enums.ResponseErrorCode.FAIL_404;
 import static com.parker.common.exception.enums.ResponseErrorCode.FAIL_500;
 
 @Slf4j
@@ -112,40 +114,46 @@ public class SchedulesService {
 
     /**
      * @param scheduleId
-     * @param schedulesDto
+     * @param schedulesUpdateDto
      */
     @Transactional
-    public SchedulesEntity modifyScheduleInfo(Long scheduleId, SchedulesDto schedulesDto) {
-        if (SecurityUtil.getCurrentUserName().isPresent() && !userService.checkUserCheck(SecurityUtil.getCurrentUserName().get())) {
-            throw new CustomException(FAIL_500.code(),
+    public SchedulesEntity modifyScheduleInfo(Long scheduleId, SchedulesUpdateDto schedulesUpdateDto) {
+        SchedulesEntity existingSchedule = schedulesRepository.findById(scheduleId)
+                .orElseThrow(() -> new CustomException(FAIL_404.code(),
+                        messageSource.getMessage("schedules.data.not.found", null, Locale.getDefault()),
+                        HttpStatus.NOT_FOUND));
+
+        // 소유권 검증: 본인의 일정만 수정 가능
+        if (!existingSchedule.getUserId().equals(userService.getUserId())) {
+            throw new CustomException(FAIL_403.code(),
                     messageSource.getMessage("user.un.auth", null, Locale.getDefault()),
-                    HttpStatus.INTERNAL_SERVER_ERROR);
+                    HttpStatus.FORBIDDEN);
         }
 
-        return schedulesRepository.findById(scheduleId).map(
-                existingSchedule -> {
-                    updateFields(existingSchedule, schedulesDto);
-                    return schedulesRepository.save(existingSchedule);
-                }
-        ).orElseThrow(
-                () -> new CustomException(FAIL_500.code(),
-                        messageSource.getMessage("schedules.data.not.found", null, Locale.getDefault()),
-                        HttpStatus.INTERNAL_SERVER_ERROR)
-        );
+        updateFields(existingSchedule, schedulesUpdateDto);
+        return schedulesRepository.save(existingSchedule);
     }
 
     /**
      * @param scheduleId
      */
     public String deleteScheduleData(Long scheduleId) {
+        // 소유권 검증: 본인의 일정만 삭제 가능
+        SchedulesEntity schedule = schedulesRepository.findById(scheduleId)
+                .orElseThrow(() -> new CustomException(FAIL_400.code(),
+                        messageSource.getMessage("schedules.data.not.found", null, Locale.getDefault()),
+                        HttpStatus.BAD_REQUEST));
+
+        if (!schedule.getUserId().equals(userService.getUserId())) {
+            throw new CustomException(FAIL_403.code(),
+                    messageSource.getMessage("user.un.auth", null, Locale.getDefault()),
+                    HttpStatus.FORBIDDEN);
+        }
+
         try {
             schedulesRepository.deleteById(scheduleId);
             return messageSource.getMessage("schedules.delete.success", null, Locale.getDefault());
-        } catch (EmptyResultDataAccessException e) {
-            // 해당 ID로 찾을 수 없을 때 처리
-            throw new CustomException(FAIL_400.code(), messageSource.getMessage("schedules.data.not.found", null, Locale.getDefault()), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
-            // 기타 예외 처리
             throw new CustomException(FAIL_500.code(), messageSource.getMessage("http.status.inter", null, Locale.getDefault()), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -158,12 +166,11 @@ public class SchedulesService {
      * @param existingSchedule
      * @param schedulesDto
      */
-    private void updateFields(SchedulesEntity existingSchedule, SchedulesDto schedulesDto) {
-        // 명시적으로 모든 필드를 업데이트
-        existingSchedule.setTitle(schedulesDto.getTitle());
-        existingSchedule.setDescription(schedulesDto.getDescription());
-        existingSchedule.setStartDateTime(schedulesDto.getStartDateTime());
-        existingSchedule.setEndDateTime(schedulesDto.getEndDateTime());
+    private void updateFields(SchedulesEntity existingSchedule, SchedulesUpdateDto schedulesUpdateDto) {
+        Optional.ofNullable(schedulesUpdateDto.getTitle()).ifPresent(existingSchedule::setTitle);
+        Optional.ofNullable(schedulesUpdateDto.getDescription()).ifPresent(existingSchedule::setDescription);
+        Optional.ofNullable(schedulesUpdateDto.getStartDateTime()).ifPresent(existingSchedule::setStartDateTime);
+        Optional.ofNullable(schedulesUpdateDto.getEndDateTime()).ifPresent(existingSchedule::setEndDateTime);
     }
 
 }

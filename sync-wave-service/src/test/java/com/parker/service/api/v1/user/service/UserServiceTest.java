@@ -215,36 +215,47 @@ class UserServiceTest {
      * 테스트 시나리오: 사용자 삭제 요청 시 성공한다
      */
     @Test
-    @DisplayName("사용자 삭제 성공 테스트")
+    @DisplayName("사용자 삭제 성공 테스트 - MASTER가 다른 사용자 삭제 (하드 딜리트)")
     void deleteUserInfo_유효한사용자ID_성공() {
-        // Given: 테스트 데이터 준비
-        String userId = "hong@email.com";
+        // Given: 테스트 데이터 준비 - MASTER가 다른 사용자(hong@email.com)를 삭제
+        String targetUserId = "hong@email.com";
+        String masterEmail = "master@email.com";
         String expectedMessage = "hong@email.com deleted!";
 
-        UserEntity user = UserEntity.builder()
-                .id(1L)
-                .userName("홍길동")
-                .email("hong@email.com")
+        UserEntity masterUser = UserEntity.builder()
+                .id(2L)
+                .userName("마스터")
+                .email(masterEmail)
                 .role(Role.ROLE_MASTER.code())
                 .build();
 
-        // Mock 설정: 사용자 체크 - 마스터 권한
-        try (MockedStatic<SecurityUtil> mockedSecurityUtil = mockStatic(SecurityUtil.class)) {
-            mockedSecurityUtil.when(SecurityUtil::getCurrentUserName).thenReturn(Optional.of("hong@email.com"));
-            when(userRepository.findByEmail("hong@email.com")).thenReturn(Optional.of(user));
+        UserEntity targetUser = UserEntity.builder()
+                .id(1L)
+                .userName("홍길동")
+                .email(targetUserId)
+                .role(Role.ROLE_USER.code())
+                .build();
 
-            // Mock 설정: 사용자 삭제
-            doNothing().when(userRepository).deleteByEmail(userId);
+        // Mock 설정: 현재 사용자는 master@email.com (MASTER 권한)
+        try (MockedStatic<SecurityUtil> mockedSecurityUtil = mockStatic(SecurityUtil.class)) {
+            mockedSecurityUtil.when(SecurityUtil::getCurrentUserName).thenReturn(Optional.of(masterEmail));
+            // roleCheck()에서 현재 사용자(master) 조회
+            when(userRepository.findByEmail(masterEmail)).thenReturn(Optional.of(masterUser));
+            // 삭제 대상 사용자 조회
+            when(userRepository.findByEmail(targetUserId)).thenReturn(Optional.of(targetUser));
+
+            // Mock 설정: 사용자 하드 딜리트
+            doNothing().when(userRepository).delete(any(UserEntity.class));
 
             // When: 테스트할 메서드 실행
-            String result = userService.deleteUserInfo(userId);
+            String result = userService.deleteUserInfo(targetUserId);
 
             // Then: 결과 검증
             assertThat(result).isEqualTo(expectedMessage);
 
             // Mock 객체의 메서드가 호출되었는지 검증
-            verify(userRepository, atLeastOnce()).findByEmail("hong@email.com");
-            verify(userRepository).deleteByEmail(userId);
+            verify(userRepository).findByEmail(targetUserId);
+            verify(userRepository).delete(any(UserEntity.class));
         }
     }
 

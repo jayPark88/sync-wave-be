@@ -91,7 +91,7 @@ public class UserService {
                 .map(existingUser -> {
                     updateCommonFields(existingUser, userUpdateRequestDto);
                     updatePasswordIfPresent(existingUser, userUpdateRequestDto);
-                    return existingUser;
+                    return userRepository.save(existingUser);
                 })
                 .orElseThrow(() -> new CustomException(FAIL_404.code(),
                         messageSource.getMessage("user.not.found", null, Locale.getDefault()),
@@ -159,7 +159,7 @@ public class UserService {
         }
 
         UserEntity user = userOpt.get();
-        if (!checkUserCheck(user.getId().toString())) {
+        if (!checkUserCheck(user.getEmail())) {
             throw new CustomException(FAIL_403.code(),
                     messageSource.getMessage("user.un.auth", null, Locale.getDefault()),
                     HttpStatus.FORBIDDEN);

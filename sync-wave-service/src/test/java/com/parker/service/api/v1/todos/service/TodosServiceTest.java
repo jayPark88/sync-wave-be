@@ -236,9 +236,12 @@ class TodosServiceTest {
                 .userId(1L)
                 .build();
 
+        // Mock 설정: 소유권 검증을 위한 현재 사용자 ID 반환
+        when(userService.getUserId()).thenReturn(1L);
+
         // Mock 설정: TodosRepository의 findById 메서드가 호출되면 Optional.of(existingTodo)를 반환
         when(todosRepository.findById(1L)).thenReturn(Optional.of(existingTodo));
-        
+
         // Mock 설정: TodosRepository의 save 메서드가 호출되면 updatedTodo를 반환
         when(todosRepository.save(any(TodosEntity.class))).thenReturn(updatedTodo);
 
@@ -253,6 +256,7 @@ class TodosServiceTest {
 
         // Mock 객체의 메서드가 호출되었는지 검증
         verify(todosRepository).findById(1L);
+        verify(userService).getUserId();
         verify(todosRepository).save(any(TodosEntity.class));
     }
 
@@ -300,9 +304,20 @@ class TodosServiceTest {
         Long todosId = 1L;
         String expectedMessage = "할일이 삭제되었습니다.";
 
+        TodosEntity todo = TodosEntity.builder()
+                .id(todosId)
+                .task("삭제할 할일")
+                .status("PENDING")
+                .userId(1L)
+                .build();
+
+        // Mock 설정: 소유권 검증을 위한 findById 및 현재 사용자 ID
+        when(todosRepository.findById(todosId)).thenReturn(Optional.of(todo));
+        when(userService.getUserId()).thenReturn(1L);
+
         // Mock 설정: TodosRepository의 deleteById 메서드가 호출되면 아무것도 하지 않음
         doNothing().when(todosRepository).deleteById(todosId);
-        
+
         // Mock 설정: MessageSource 메시지 반환
         when(messageSource.getMessage(anyString(), any(), any())).thenReturn(expectedMessage);
 
@@ -313,6 +328,8 @@ class TodosServiceTest {
         assertThat(result).isEqualTo(expectedMessage);
 
         // Mock 객체의 메서드가 호출되었는지 검증
+        verify(todosRepository).findById(todosId);
+        verify(userService).getUserId();
         verify(todosRepository).deleteById(todosId);
     }
 
@@ -328,9 +345,9 @@ class TodosServiceTest {
         // Given: 테스트 데이터 준비
         Long todosId = 999L;
 
-        // Mock 설정: TodosRepository의 deleteById 메서드가 호출되면 EmptyResultDataAccessException을 던짐
-        doThrow(new EmptyResultDataAccessException(1)).when(todosRepository).deleteById(todosId);
-        
+        // Mock 설정: TodosRepository의 findById 메서드가 호출되면 Optional.empty()를 반환 (존재하지 않는 할일)
+        when(todosRepository.findById(todosId)).thenReturn(Optional.empty());
+
         // Mock 설정: MessageSource 메시지 반환
         when(messageSource.getMessage(anyString(), any(), any())).thenReturn("할일을 찾을 수 없습니다");
 
@@ -338,8 +355,9 @@ class TodosServiceTest {
         assertThatThrownBy(() -> todosService.deleteTodoData(todosId))
                 .isInstanceOf(CustomException.class);
 
-        // Mock 객체의 메서드가 호출되었는지 검증
-        verify(todosRepository).deleteById(todosId);
+        // Mock 객체의 메서드가 호출되었는지 검증 (findById 호출, deleteById는 호출되지 않음)
+        verify(todosRepository).findById(todosId);
+        verify(todosRepository, never()).deleteById(todosId);
     }
 
     /**
@@ -372,9 +390,12 @@ class TodosServiceTest {
                 .userId(1L)
                 .build();
 
+        // Mock 설정: 소유권 검증을 위한 현재 사용자 ID 반환
+        when(userService.getUserId()).thenReturn(1L);
+
         // Mock 설정: TodosRepository의 findById 메서드가 호출되면 Optional.of(existingTodo)를 반환
         when(todosRepository.findById(1L)).thenReturn(Optional.of(existingTodo));
-        
+
         // Mock 설정: TodosRepository의 save 메서드가 호출되면 updatedTodo를 반환
         when(todosRepository.save(any(TodosEntity.class))).thenReturn(updatedTodo);
 
@@ -389,6 +410,7 @@ class TodosServiceTest {
 
         // Mock 객체의 메서드가 호출되었는지 검증
         verify(todosRepository).findById(1L);
+        verify(userService).getUserId();
         verify(todosRepository).save(any(TodosEntity.class));
     }
 }

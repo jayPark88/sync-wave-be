@@ -57,6 +57,7 @@ subprojects {
 
     tasks.test {
         useJUnitPlatform()
+        jvmArgs("-Dnet.bytebuddy.experimental=true")
     }
 
     configure<org.gradle.plugins.ide.idea.model.IdeaModel> {
